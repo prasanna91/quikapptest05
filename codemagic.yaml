@@ -4,6 +4,7 @@ workflows:
     environment:
       flutter: 3.8.1
       vars:
+        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
@@ -78,6 +79,7 @@ workflows:
     environment:
       flutter: 3.8.1
       vars:
+        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
@@ -151,6 +153,7 @@ workflows:
     environment:
       flutter: 3.8.1
       vars:
+        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
