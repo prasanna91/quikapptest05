@@ -206,9 +206,22 @@ install_flutter_version() {
     # Add Flutter to PATH
     export PATH="$flutter_dir/bin:$PATH"
     
+    # Run Flutter doctor to ensure everything is set up
+    log "Running Flutter doctor..."
+    flutter doctor -v
+    
     # Verify installation
     if flutter --version | grep -q "Flutter $version"; then
       log "Successfully installed Flutter version $version"
+      
+      # Accept Android licenses
+      log "Accepting Android licenses..."
+      yes | flutter doctor --android-licenses
+      
+      # Pre-download Android SDK components
+      log "Pre-downloading Android SDK components..."
+      flutter precache --android
+      
       return 0
     else
       log "[ERROR] Flutter version verification failed after installation"
@@ -276,33 +289,15 @@ check_flutter_version() {
       
       # Check Flutter version
       if [ "$CURRENT_FLUTTER_VERSION" != "$REQUIRED_FLUTTER_VERSION" ]; then
-        log "Flutter version mismatch. Attempting to switch to version $REQUIRED_FLUTTER_VERSION..."
+        log "Flutter version mismatch. Attempting to install version $REQUIRED_FLUTTER_VERSION..."
         
-        # Try to switch Flutter version using git
-        if git -C "$(dirname "$(which flutter)")" rev-parse --is-inside-work-tree &>/dev/null; then
-          log "Flutter is git-based, attempting to switch version..."
-          if git -C "$(dirname "$(which flutter)")" checkout "$REQUIRED_FLUTTER_VERSION" && \
-             flutter --version | grep -q "Flutter $REQUIRED_FLUTTER_VERSION"; then
-            log "Successfully switched to Flutter version $REQUIRED_FLUTTER_VERSION"
-          else
-            log "[WARN] Failed to switch Flutter version via git, attempting direct installation..."
-            if install_flutter_version "$REQUIRED_FLUTTER_VERSION"; then
-              log "Successfully installed Flutter version $REQUIRED_FLUTTER_VERSION"
-            else
-              log "[ERROR] Failed to install Flutter version $REQUIRED_FLUTTER_VERSION"
-              send_notification "FAILED" "Failed to install Flutter version $REQUIRED_FLUTTER_VERSION" "${BUILD_URL:-}"
-              exit 1
-            fi
-          fi
+        # Try direct installation first (most reliable in CI)
+        if install_flutter_version "$REQUIRED_FLUTTER_VERSION"; then
+          log "Successfully installed Flutter version $REQUIRED_FLUTTER_VERSION"
         else
-          log "Flutter installation is not git-based, attempting direct installation..."
-          if install_flutter_version "$REQUIRED_FLUTTER_VERSION"; then
-            log "Successfully installed Flutter version $REQUIRED_FLUTTER_VERSION"
-          else
-            log "[ERROR] Failed to install Flutter version $REQUIRED_FLUTTER_VERSION"
-            send_notification "FAILED" "Failed to install Flutter version $REQUIRED_FLUTTER_VERSION" "${BUILD_URL:-}"
-            exit 1
-          fi
+          log "[ERROR] Failed to install Flutter version $REQUIRED_FLUTTER_VERSION"
+          send_notification "FAILED" "Failed to install Flutter version $REQUIRED_FLUTTER_VERSION" "${BUILD_URL:-}"
+          exit 1
         fi
       else
         log "Flutter version matches requirements"

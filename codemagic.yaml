@@ -2,7 +2,7 @@ workflows:
   android-free:
     name: Android-Free
     environment:
-      flutter: 3.8.1
+      flutter: 3.22.1
       vars:
         PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
@@ -65,10 +65,15 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Force Flutter Downgrade
+        script: |
+          echo "Attempting to force downgrade Flutter to 3.8.1..."
+          flutter downgrade 3.8.1 --force || true
+          flutter --version
       - name: Install FVM
         script: |
-            dart pub global activate fvm
-            export PATH="$PATH":"$HOME/.pub-cache/bin"
+          dart pub global activate fvm
+          export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
@@ -77,7 +82,7 @@ workflows:
   android-paid:
     name: Android-Paid
     environment:
-      flutter: 3.8.1
+      flutter: 3.22.1
       vars:
         PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
@@ -140,10 +145,15 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Force Flutter Downgrade
+        script: |
+          echo "Attempting to force downgrade Flutter to 3.8.1..."
+          flutter downgrade 3.8.1 --force || true
+          flutter --version
       - name: Install FVM
         script: |
-            dart pub global activate fvm
-            export PATH="$PATH":"$HOME/.pub-cache/bin"
+          dart pub global activate fvm
+          export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
@@ -151,7 +161,7 @@ workflows:
   android-publish:
     name: Android-Publish
     environment:
-      flutter: 3.8.1
+      flutter: 3.22.1
       vars:
         PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
@@ -214,10 +224,15 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Force Flutter Downgrade
+        script: |
+          echo "Attempting to force downgrade Flutter to 3.8.1..."
+          flutter downgrade 3.8.1 --force || true
+          flutter --version
       - name: Install FVM
         script: |
-            dart pub global activate fvm
-            export PATH="$PATH":"$HOME/.pub-cache/bin"
+          dart pub global activate fvm
+          export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
