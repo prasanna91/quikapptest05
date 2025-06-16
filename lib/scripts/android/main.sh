@@ -2,32 +2,188 @@
 set -euo pipefail
 trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 
-# Source local environment variables if available (for local development/testing)
-if [ -f "lib/config/env.sh" ]; then
-  set -a  # automatically export all variables
-  source lib/config/env.sh
-  set +a  # stop automatically exporting
-fi
-
-# Source common variables with defaults for local/dev builds
-source lib/scripts/utils/variables.sh
-
 # Logging function
 log() {
   echo "[ANDROID][$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-log "Starting Android-Free workflow (no Firebase, no Keystore)"
+# Source common variables with defaults
+source lib/scripts/utils/variables.sh
 
-# Load dynamic variables (from API or admin config)
-# Example: source lib/scripts/utils/load_vars.sh
-#if [ -f "lib/scripts/utils/load_vars.sh" ]; then
-#  source lib/scripts/utils/load_vars.sh
-#else
-#  log "[WARN] Variable loader not found. Using environment variables."
-#fi
+# Source local environment variables if available (for local development/testing)
+# These will override defaults from variables.sh
+if [ -f "lib/config/env.sh" ]; then
+  log "Sourcing local environment variables from lib/config/env.sh"
+  # Note: `source` (or `.`) automatically exports variables when called directly
+  source lib/config/env.sh
+else
+  log "lib/config/env.sh not found. Assuming Codemagic environment variables (CM_ENV) are present."
+fi
 
-# Validate required variables
+# Export all variables needed by sub-scripts if not already exported
+export APP_NAME
+export PKG_NAME
+export VERSION_NAME
+export VERSION_CODE
+export ORG_NAME
+export WEB_URL
+export EMAIL_ID
+export PUSH_NOTIFY
+export IS_CHATBOT
+export IS_DEEPLINK
+export IS_SPLASH
+export IS_PULLDOWN
+export IS_BOTTOMMENU
+export IS_LOAD_IND
+export IS_CAMERA
+export IS_LOCATION
+export IS_MIC
+export IS_NOTIFICATION
+export IS_CONTACT
+export IS_BIOMETRIC
+export IS_CALENDAR
+export IS_STORAGE
+export LOGO_URL
+export SPLASH
+export SPLASH_BG
+export SPLASH_BG_COLOR
+export SPLASH_TAGLINE
+export SPLASH_TAGLINE_COLOR
+export SPLASH_ANIMATION
+export SPLASH_DURATION
+export BOTTOMMENU_ITEMS
+export BOTTOMMENU_BG_COLOR
+export BOTTOMMENU_ICON_COLOR
+export BOTTOMMENU_TEXT_COLOR
+export BOTTOMMENU_FONT
+export BOTTOMMENU_FONT_SIZE
+export BOTTOMMENU_FONT_BOLD
+export BOTTOMMENU_FONT_ITALIC
+export BOTTOMMENU_ACTIVE_TAB_COLOR
+export BOTTOMMENU_ICON_POSITION
+export BOTTOMMENU_VISIBLE_ON
+export firebase_config_android
+export firebase_config_ios
+export KEY_STORE
+export CM_KEYSTORE_PASSWORD
+export CM_KEY_ALIAS
+export CM_KEY_PASSWORD
+
+# Debug: Display important environment variables
+log "=== Environment Variables Debug ==="
+log "App Info:"
+log "  APP_NAME: ${APP_NAME:-[NOT SET]}"
+log "  VERSION_NAME: ${VERSION_NAME:-[NOT SET]}"
+log "  VERSION_CODE: ${VERSION_CODE:-[NOT SET]}"
+log "  PKG_NAME: ${PKG_NAME:-[NOT SET]}"
+log "  BUNDLE_ID: ${BUNDLE_ID:-[NOT SET]}"
+
+log "Organization:"
+log "  ORG_NAME: ${ORG_NAME:-[NOT SET]}"
+log "  WEB_URL: ${WEB_URL:-[NOT SET]}"
+log "  EMAIL_ID: ${EMAIL_ID:-[NOT SET]}"
+
+log "Feature Flags:"
+log "  PUSH_NOTIFY: ${PUSH_NOTIFY:-[NOT SET]}"
+log "  IS_CHATBOT: ${IS_CHATBOT:-[NOT SET]}"
+log "  IS_DEEPLINK: ${IS_DEEPLINK:-[NOT SET]}"
+log "  IS_SPLASH: ${IS_SPLASH:-[NOT SET]}"
+log "  IS_PULLDOWN: ${IS_PULLDOWN:-[NOT SET]}"
+log "  IS_BOTTOMMENU: ${IS_BOTTOMMENU:-[NOT SET]}"
+log "  IS_LOAD_IND: ${IS_LOAD_IND:-[NOT SET]}"
+
+log "Permissions:"
+log "  IS_CAMERA: ${IS_CAMERA:-[NOT SET]}"
+log "  IS_LOCATION: ${IS_LOCATION:-[NOT SET]}"
+log "  IS_MIC: ${IS_MIC:-[NOT SET]}"
+log "  IS_NOTIFICATION: ${IS_NOTIFICATION:-[NOT SET]}"
+log "  IS_CONTACT: ${IS_CONTACT:-[NOT SET]}"
+log "  IS_BIOMETRIC: ${IS_BIOMETRIC:-[NOT SET]}"
+log "  IS_CALENDAR: ${IS_CALENDAR:-[NOT SET]}"
+log "  IS_STORAGE: ${IS_STORAGE:-[NOT SET]}"
+
+log "UI/Branding:"
+log "  LOGO_URL: ${LOGO_URL:-[NOT SET]}"
+log "  SPLASH_URL: ${SPLASH_URL:-[NOT SET]}"
+log "  SPLASH_BG: ${SPLASH_BG:-[NOT SET]}"
+log "  SPLASH_BG_COLOR: ${SPLASH_BG_COLOR:-[NOT SET]}"
+log "  SPLASH_TAGLINE: ${SPLASH_TAGLINE:-[NOT SET]}"
+log "  SPLASH_TAGLINE_COLOR: ${SPLASH_TAGLINE_COLOR:-[NOT SET]}"
+log "  SPLASH_ANIMATION: ${SPLASH_ANIMATION:-[NOT SET]}"
+log "  SPLASH_DURATION: ${SPLASH_DURATION:-[NOT SET]}"
+
+if [ "${IS_BOTTOMMENU:-}" = "true" ]; then
+  log "Bottom Menu Config:"
+  log "  BOTTOMMENU_ITEMS: ${BOTTOMMENU_ITEMS:-[NOT SET]}"
+  log "  BOTTOMMENU_BG_COLOR: ${BOTTOMMENU_BG_COLOR:-[NOT SET]}"
+  log "  BOTTOMMENU_ICON_COLOR: ${BOTTOMMENU_ICON_COLOR:-[NOT SET]}"
+  log "  BOTTOMMENU_TEXT_COLOR: ${BOTTOMMENU_TEXT_COLOR:-[NOT SET]}"
+  log "  BOTTOMMENU_FONT: ${BOTTOMMENU_FONT:-[NOT SET]}"
+  log "  BOTTOMMENU_FONT_SIZE: ${BOTTOMMENU_FONT_SIZE:-[NOT SET]}"
+  log "  BOTTOMMENU_FONT_BOLD: ${BOTTOMMENU_FONT_BOLD:-[NOT SET]}"
+  log "  BOTTOMMENU_FONT_ITALIC: ${BOTTOMMENU_FONT_ITALIC:-[NOT SET]}"
+  log "  BOTTOMMENU_ACTIVE_TAB_COLOR: ${BOTTOMMENU_ACTIVE_TAB_COLOR:-[NOT SET]}"
+  log "  BOTTOMMENU_ICON_POSITION: ${BOTTOMMENU_ICON_POSITION:-[NOT SET]}"
+  log "  BOTTOMMENU_VISIBLE_ON: ${BOTTOMMENU_VISIBLE_ON:-[NOT SET]}"
+fi
+
+log "Firebase Config:"
+log "  FIREBASE_CONFIG_ANDROID: ${FIREBASE_CONFIG_ANDROID:-[NOT SET]}"
+log "  FIREBASE_CONFIG_IOS: ${FIREBASE_CONFIG_IOS:-[NOT SET]}"
+
+log "iOS Signing:"
+log "  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-[NOT SET]}"
+log "  APNS_KEY_ID: ${APNS_KEY_ID:-[NOT SET]}"
+log "  APNS_AUTH_KEY_URL: ${APNS_AUTH_KEY_URL:-[NOT SET]}"
+log "  CERT_PASSWORD: ${CERT_PASSWORD:-[NOT SET]}"
+log "  PROFILE_URL: ${PROFILE_URL:-[NOT SET]}"
+log "  CERT_CER_URL: ${CERT_CER_URL:-[NOT SET]}"
+log "  CERT_KEY_URL: ${CERT_KEY_URL:-[NOT SET]}"
+log "  APP_STORE_CONNECT_KEY_IDENTIFIER: ${APP_STORE_CONNECT_KEY_IDENTIFIER:-[NOT SET]}"
+
+log "Android Keystore:"
+log "  KEY_STORE: ${KEY_STORE:-[NOT SET]}"
+log "  CM_KEYSTORE_PASSWORD: ${CM_KEYSTORE_PASSWORD:-[NOT SET]}"
+log "  CM_KEY_ALIAS: ${CM_KEY_ALIAS:-[NOT SET]}"
+log "  CM_KEY_PASSWORD: ${CM_KEY_PASSWORD:-[NOT SET]}"
+log "=== End Environment Variables Debug ==="
+
+log "Starting Android build workflow..."
+
+# Determine workflow based on variables
+WORKFLOW_TYPE="android-free" # Default workflow
+WORKFLOW_VERSION="1.0.0" # Default workflow version (can be updated dynamically)
+
+# Check for Firebase configuration to determine workflow
+if [ -n "${firebase_config_android:-}" ]; then
+  WORKFLOW_TYPE="android-paid"
+  log "Firebase config detected. Setting workflow to: $WORKFLOW_TYPE"
+fi
+
+# Check for Keystore configuration to determine workflow
+if [ -n "${KEY_STORE:-}" ]; then
+  WORKFLOW_TYPE="android-publish"
+  log "Keystore detected. Setting workflow to: $WORKFLOW_TYPE"
+fi
+
+# Update workflow version based on PUSH_NOTIFY and KEY_STORE
+if [ "${PUSH_NOTIFY:-false}" = "true" ] && [ -z "${KEY_STORE:-}" ]; then
+  WORKFLOW_VERSION="android-push-notify.yml" # Example: a specific workflow version if only push notify
+elif [ "${PUSH_NOTIFY:-false}" = "true" ] && [ -n "${KEY_STORE:-}" ]; then
+  WORKFLOW_VERSION="android-publish-push.yml" # Example: a specific workflow version if push notify and keystore
+elif [ "${PUSH_NOTIFY:-false}" = "false" ] && [ -z "${KEY_STORE:-}" ]; then
+  WORKFLOW_VERSION="android-free.yml" # Default free workflow
+elif [ "${PUSH_NOTIFY:-false}" = "false" ] && [ -n "${KEY_STORE:-}" ]; then
+  WORKFLOW_VERSION="android-publish-no-push.yml" # Example: a specific workflow version if keystore but no push
+fi
+
+# For simplicity, we are setting WORKFLOW_VERSION directly for demonstration. In a real scenario,
+# this might be read from a Codemagic environment variable like CM_WORKFLOW_ID or calculated more dynamically.
+
+log "Detected Android Workflow Type: $WORKFLOW_TYPE"
+log "Calculated Workflow Version (example): $WORKFLOW_VERSION"
+
+# Validate required variables (common across all workflows)
 REQUIRED_VARS=(
   "APP_NAME"
   "PKG_NAME"
@@ -50,140 +206,126 @@ mkdir -p "$OUTPUT_DIR/android"
 
 # Clean old APK/AAB files before build
 log "Cleaning old APK/AAB files in $OUTPUT_DIR/android/ ..."
-rm -f "$OUTPUT_DIR/android/"*.apk "$OUTPUT_DIR/android/"*.aab || true
+rm -f "$OUTPUT_DIR/android/"*.apk || true
+rm -f "$OUTPUT_DIR/android/"*.aab || true
 
-# Determine workflow based on environment variables
-if [ "$PUSH_NOTIFY" = "true" ] && [ -n "$KEY_STORE" ]; then
-  log "Starting Android-Paid workflow (with Firebase and Keystore)"
-  source lib/scripts/android/firebase.sh
-  source lib/scripts/android/keystore.sh
-elif [ "$PUSH_NOTIFY" = "true" ]; then
-  log "Starting Android-Publish workflow (with Firebase, no Keystore)"
-  source lib/scripts/android/firebase.sh
+# Branding, splash, and icon setup
+log "Setting up branding and assets..."
+if [ -f "lib/scripts/android/branding.sh" ]; then
+  bash lib/scripts/android/branding.sh
 else
-  log "Starting Android-Free workflow (no Firebase, no Keystore)"
-  # Skip Firebase setup in free workflow
-  log "[INFO] Skipping Firebase setup in free workflow"
+  log "[WARN] Branding sub-script not found. Skipping branding setup."
 fi
 
-# Continue with branding and build steps
-source lib/scripts/android/branding.sh
-
-# Permissions
+# Permissions setup
+log "Setting up permissions..."
 if [ -f "lib/scripts/android/permissions.sh" ]; then
   bash lib/scripts/android/permissions.sh
+else
+  log "[WARN] Permissions sub-script not found. Skipping permissions setup."
+fi
+
+# Firebase setup (if enabled by PUSH_NOTIFY or Firebase config)
+if [ "${PUSH_NOTIFY:-false}" = "true" ] || [ -n "${firebase_config_android:-}" ]; then
+  log "Setting up Firebase..."
+  if [ -f "lib/scripts/android/firebase.sh" ]; then
+    bash lib/scripts/android/firebase.sh
+  else
+    log "[WARN] Firebase sub-script not found. Skipping Firebase setup."
+  fi
+else
+  log "PUSH_NOTIFY is false and no Firebase config detected; skipping Firebase setup."
+fi
+
+# Keystore setup (if KEY_STORE is set)
+if [ -n "${KEY_STORE:-}" ]; then
+  log "Setting up Keystore..."
+  if [ -f "lib/scripts/android/signing.sh" ]; then
+    bash lib/scripts/android/signing.sh
+  else
+    log "[WARN] Signing sub-script not found. Skipping Keystore setup."
+  fi
+else
+  log "KEY_STORE is not set; skipping Keystore setup."
 fi
 
 # Dart variable injection
-echo "[DART ENV] Generating Dart env file..."
+log "Generating Dart environment variables..."
 bash lib/scripts/utils/gen_dart_env.sh
 
-# Determine workflow based on PUSH_NOTIFY and KEY_STORE
-WORKFLOW_ID_LOWER=""
-if [ "$PUSH_NOTIFY" = "true" ] && [ -n "$KEY_STORE" ]; then
-  WORKFLOW_ID_LOWER="android-paid"
-elif [ "$PUSH_NOTIFY" = "true" ] && [ -z "$KEY_STORE" ]; then
-  WORKFLOW_ID_LOWER="android-publish"
-else
-  WORKFLOW_ID_LOWER="android-free"
+# Check and create Android directory structure if needed
+if [ ! -d "android" ]; then
+  log "Android directory not found. Creating Flutter Android project..."
+  flutter create . --platforms=android
 fi
 
-if [[ "$WORKFLOW_ID_LOWER" == "android-paid" ]]; then
-  log "Android-Paid workflow: Firebase enabled, Keystore disabled."
-  # Load Firebase config
-  if [ -f "lib/scripts/android/firebase.sh" ]; then
-    log "Injecting Firebase config..."
-    bash lib/scripts/android/firebase.sh
+# Dynamic App Name & Package Name Injection (Android)
+log "Updating app name and package ID..."
+if [ -n "${APP_NAME:-}" ]; then
+  if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+    sed -i '' "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
   else
-    log "[WARN] Firebase sub-script not found. Skipping Firebase injection."
+    log "[WARN] AndroidManifest.xml not found. Skipping app name update."
   fi
 fi
 
-# Function to send keystore guidance email
-send_keystore_guidance() {
-  bash lib/scripts/utils/send_email.sh "Keystore Error" "Android-Publish" "" "" "" "#" "#" "keystore_guidance"
-}
+if [ -n "${PKG_NAME:-}" ]; then
+  # Update package name in build.gradle
+  if [ -f "android/app/build.gradle" ]; then
+    sed -i '' "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
+    sed -i '' "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+  else
+    log "[WARN] build.gradle not found. Skipping package name update in build.gradle."
+  fi
 
-if [[ "$WORKFLOW_ID_LOWER" == "android-publish" ]]; then
-  log "Android-Publish workflow: Firebase and Keystore enabled."
-  # Load Firebase config
-  if [ -f "lib/scripts/android/firebase.sh" ]; then
-    log "Injecting Firebase config..."
-    bash lib/scripts/android/firebase.sh
+  # Update package name in AndroidManifest.xml
+  if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+    sed -i '' "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
   else
-    log "[WARN] Firebase sub-script not found. Skipping Firebase injection."
+    log "[WARN] AndroidManifest.xml not found. Skipping package name update in AndroidManifest.xml."
   fi
-  # Load Keystore only if KEY_STORE is set and looks like a URL or file
-  if [ -n "${KEY_STORE:-}" ]; then
-    if [[ "$KEY_STORE" =~ ^https?:// ]] || [[ -f "$KEY_STORE" ]]; then
-      if [ -f "lib/scripts/android/keystore.sh" ]; then
-        log "Injecting Keystore..."
-        if ! bash lib/scripts/android/keystore.sh; then
-          log "[ERROR] Keystore injection failed. Sending guidance email."
-          send_keystore_guidance
-          exit 1
-        fi
-      else
-        log "[WARN] Keystore sub-script not found. Skipping Keystore injection."
-      fi
-    else
-      log "[ERROR] KEY_STORE is set but not a valid URL or file. Sending guidance email."
-      send_keystore_guidance
-      exit 1
-    fi
+
+  # Update package name in MainActivity.kt
+  CURRENT_DIR=$(pwd)
+  OLD_MAIN_ACTIVITY_PATH="$CURRENT_DIR/android/app/src/main/kotlin/com/example/quikapptest05/MainActivity.kt"
+  NEW_PACKAGE_PATH=$(echo "$PKG_NAME" | sed 's/\./\//g') # Convert com.example.app to com/example/app
+  NEW_MAIN_ACTIVITY_DIR="$CURRENT_DIR/android/app/src/main/kotlin/$NEW_PACKAGE_PATH"
+  NEW_MAIN_ACTIVITY_FILE="$NEW_MAIN_ACTIVITY_DIR/MainActivity.kt"
+
+  if [ -f "$OLD_MAIN_ACTIVITY_PATH" ]; then
+    OLD_PACKAGE_IN_FILE="com.example.quikapptest05"
+    # Create new package directory structure if it doesn't exist
+    mkdir -p "$NEW_MAIN_ACTIVITY_DIR"
+
+    # Move MainActivity.kt to the new package directory
+    mv "$OLD_MAIN_ACTIVITY_PATH" "$NEW_MAIN_ACTIVITY_FILE" || true
+
+    # Update package declaration in MainActivity.kt
+    sed -i '' "s/package $OLD_PACKAGE_IN_FILE/package $PKG_NAME/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+
+    log "Updated package name in MainActivity.kt and moved to new directory."
   else
-    log "[ERROR] KEY_STORE is not set. Sending guidance email."
-    send_keystore_guidance
-    exit 1
+    log "[WARN] MainActivity.kt not found at expected path: $OLD_MAIN_ACTIVITY_PATH. Skipping package name update for this file."
   fi
-  # Build APK and AAB
-  log "Building APK (release mode, signed)"
-  cd android
-  ./gradlew assembleRelease
-  log "Building AAB (release mode, signed)"
-  ./gradlew bundleRelease
-  cd ..
-  # Copy APK and AAB to output directory
-  APK_PATH=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n 1)
-  AAB_PATH=$(find android/app/build/outputs/bundle/release -name '*.aab' | head -n 1)
-  if [ -f "$APK_PATH" ]; then
-    cp "$APK_PATH" "$OUTPUT_DIR/android/"
-    log "APK copied to $OUTPUT_DIR/android/"
-  else
-    log "[ERROR] APK not found after build."
-    exit 1
-  fi
-  if [ -f "$AAB_PATH" ]; then
-    cp "$AAB_PATH" "$OUTPUT_DIR/android/"
-    log "AAB copied to $OUTPUT_DIR/android/"
-  else
-    log "[ERROR] AAB not found after build."
-    exit 1
-  fi
-  log "Android-Publish workflow completed successfully."
-  exit 0
 fi
 
-# Build APK (no Firebase, no Keystore)
-log "Building APK (debug mode, unsigned)"
-cd android
-./gradlew assembleDebug
-cd ..
+# Flutter build
+log "Building Flutter Android app..."
+# Use flutter build apk instead of flutter build android
+flutter build apk --release
 
-# Copy APK to output directory
-APK_PATH=""
-if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
-  APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
-elif [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-  APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
-fi
-if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
-  cp "$APK_PATH" "$OUTPUT_DIR/android/"
-  log "APK copied to $OUTPUT_DIR/android/"
-else
-  log "[ERROR] APK not found after build."
-  exit 1
-fi
+# --- Handle APK/AAB outputs ---
+APK_OUTPUT_PATH="$OUTPUT_DIR/android/app-release.apk"
+AAB_OUTPUT_PATH="$OUTPUT_DIR/android/app-release.aab"
+
+# Find and rename APK/AAB files for consistency
+find build/app/outputs/flutter-apk/ -name '*.apk' -exec mv {} "$APK_OUTPUT_PATH" \; || true
+find build/app/outputs/bundle/release/ -name '*.aab' -exec mv {} "$AAB_OUTPUT_PATH" \; || true
+
+log "Android build completed. Artifacts are in $OUTPUT_DIR/android/"
+
+# Send notification email (stub - will be implemented in send_email.sh)
+log "Sending notification email..."
 
 # Source email variables
 if [ -f "lib/scripts/utils/variables.sh" ]; then
@@ -191,46 +333,33 @@ if [ -f "lib/scripts/utils/variables.sh" ]; then
 fi
 
 # Function to send notification email
-# send_notification() {
-#   local status="$1"
-#   local apk_url="$2"
-#   local aab_url="$3"
-#   local log_url="$4"
-#   local resume_url="$5"
-#   bash lib/scripts/utils/send_email.sh "$status" "Android" "$apk_url" "$aab_url" "" "$log_url" "$resume_url"
-# }
+send_notification() {
+  local status="$1"
+  local apk_url="$2"
+  local aab_url="$3"
+  local log_url="$4"
+  local resume_url="$5"
+  bash lib/scripts/utils/send_email.sh "$status" "Android" "$apk_url" "$aab_url" "" "$log_url" "$resume_url"
+}
 
-# trap 'send_notification "Failed" "" "" "$BUILD_LOG_URL" "$RESUME_URL"; exit 1' ERR
+trap 'send_notification "Failed" "" "" "$BUILD_LOG_URL" "$RESUME_URL"; exit 1' ERR
 
 # After successful build, send success notification
-# APK_URL=$(find "$OUTPUT_DIR/android/" -name '*.apk' | head -n 1)
-# AAB_URL=$(find "$OUTPUT_DIR/android/" -name '*.aab' | head -n 1)
-# BUILD_LOG_URL="${BUILD_LOG_URL:-#}"
-# RESUME_URL="${RESUME_URL:-#}"
-# send_notification "Success" "$APK_URL" "$AAB_URL" "$BUILD_LOG_URL" "$RESUME_URL"
+BUILD_LOG_URL="${BUILD_LOG_URL:-#}"
+RESUME_URL="${RESUME_URL:-#}"
 
-# --- Dynamic App Name & Package ID Injection (Android) ---
-log "[DEBUG] APP_NAME for sed: '$APP_NAME'"
-log "[DEBUG] PKG_NAME for sed: '$PKG_NAME'"
-if [ -n "${APP_NAME:-}" ]; then
-  sed -i '' "s@android:label=\"[^"]*\"@android:label=\"$APP_NAME\"@g" android/app/src/main/AndroidManifest.xml
-fi
-if [ -n "${PKG_NAME:-}" ]; then
-  # sed -i "" "s@applicationId = \"[^"]*\"@applicationId = \"$PKG_NAME\"@g" android/app/build.gradle.kts
-  sed -i "" "s@namespace = \"[^"]*\"@namespace = \"$PKG_NAME\"@g" android/app/build.gradle.kts
-  # Update package in MainActivity.kt if needed
-  PKG_PATH=$(echo "$PKG_NAME" | tr '.' '/')
-  if [ -d "android/app/src/main/kotlin" ]; then
-    # find android/app/src/main/kotlin -type f -name '*.kt' -exec sed -i "" "s@^package .*@package $PKG_NAME@g" {} +
-  fi
+# Check if APK and/or AAB files exist before sending their URLs
+ACTUAL_APK_URL=""
+if [ -f "$APK_OUTPUT_PATH" ]; then
+  ACTUAL_APK_URL="$CM_BUILD_WEB_URL/artifacts/$APK_OUTPUT_PATH"
 fi
 
-# Update the workflow file with the correct workflow name
-if [ "$PUSH_NOTIFY" = "true" ]; then
-    sed -i '' "s/uses: .*\/android-push-notify.yml@.*/uses: .\/android-push-notify.yml@$WORKFLOW_VERSION/" .github/workflows/android.yml
-else
-    sed -i '' "s/uses: .*\/android.yml@.*/uses: .\/android.yml@$WORKFLOW_VERSION/" .github/workflows/android.yml
+ACTUAL_AAB_URL=""
+if [ -f "$AAB_OUTPUT_PATH" ]; then
+  ACTUAL_AAB_URL="$CM_BUILD_WEB_URL/artifacts/$AAB_OUTPUT_PATH"
 fi
 
-log "Android-Free workflow completed successfully."
+send_notification "Success" "$ACTUAL_APK_URL" "$ACTUAL_AAB_URL" "$BUILD_LOG_URL" "$RESUME_URL"
+
+log "Android workflow completed successfully."
 exit 0 

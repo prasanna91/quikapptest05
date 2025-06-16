@@ -1,3 +1,4 @@
+#!/bin/bash
 # Default Email Configuration (can be overridden by API)
 DEFAULT_SMTP_SERVER="smtp.gmail.com"
 DEFAULT_SMTP_PORT="587"
