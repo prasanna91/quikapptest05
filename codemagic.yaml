@@ -331,7 +331,35 @@ workflows:
   local:
     name: Local Test (QuikApp Vars)
     environment:
-      # (put env vars here if needed)
+      android_sdk: $ANDROID_SDK_VERSION
+      ndk: $ANDROID_NDK_VERSION
+      java: $JAVA_VERSION
+      vars:
+        APP_NAME: "Garbcode App"
+        ORG_NAME: "Garbcode Apparels Private Limited"
+        WEB_URL: "https://garbcode.com/"
+        VERSION_NAME: "1.0.22"
+        VERSION_CODE: "26"
+        PKG_NAME: "com.garbcode.garbcodeapp"
+        EMAIL_ID: "prasannasrinivasan32@gmail.com"
+        IS_CAMERA: "false"
+        IS_LOCATION: "false"
+        IS_MIC: "true"
+        IS_NOTIFICATION: "true"
+        IS_CONTACT: "false"
+        IS_BIOMETRIC: "false"
+        IS_CALENDAR: "false"
+        SPLASH_SCREEN: "true"
+        PULL_TO_REFRESH: "true"
+        LOADING_INDICATORS: "true"
+        BOTTOM_NAVIGATION_BAR: "false"
+        DEEP_LINKING: "true"
+        PUSH_NOTIFY: "true"
+        IS_CHATBOT: "true"
+        ANDROID_SDK_VERSION: "34"
+        ANDROID_NDK_VERSION: "27.0.12077973"
+        GRADLE_VERSION: "8.0.0"
+        JAVA_VERSION: "17"
     scripts:
       - source ./env.sh
       - bash lib/scripts/android/main.sh
