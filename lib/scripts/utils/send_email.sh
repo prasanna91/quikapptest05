@@ -19,29 +19,35 @@ EMAIL_FROM=${NOTIFICATION_EMAIL_FROM:-noreply@quikapp.co}
 SUBJECT="[$APP_NAME] $WORKFLOW Build $STATUS"
 
 # HTML Email Template
-EMAIL_BODY="""
+EMAIL_BODY=$(cat <<'EOF'
 <html>
   <body style='font-family: "Inter", Arial, sans-serif; background: #f8fafc; color: #222;'>
     <div style='max-width: 480px; margin: 32px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px;'>
-      <h2 style='margin: 0 0 8px 0; color: #1a56db;'>$APP_NAME</h2>
-      <div style='margin-bottom: 8px; font-size: 1.1em;'>Workflow: <b>$WORKFLOW</b></div>
-      <div style='margin-bottom: 8px;'>Date: <b>$DATE</b></div>
-      <div style='margin-bottom: 16px;'>Status: <span style='background: #e0fbe0; color: #1a7f37; border-radius: 6px; padding: 2px 10px; font-weight: bold;'>$STATUS</span></div>
+      <h2 style='margin: 0 0 8px 0; color: #1a56db;'>%s</h2>
+      <div style='margin-bottom: 8px; font-size: 1.1em;'>Workflow: <b>%s</b></div>
+      <div style='margin-bottom: 8px;'>Date: <b>%s</b></div>
+      <div style='margin-bottom: 16px;'>Status: <span style='background: #e0fbe0; color: #1a7f37; border-radius: 6px; padding: 2px 10px; font-weight: bold;'>%s</span></div>
       <div style='margin-bottom: 16px;'>Artifacts:</div>
       <ul style='list-style: none; padding: 0;'>
-        ${APK_URL:+<li><a href="$APK_URL" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download APK</span></a></li>}
-        ${AAB_URL:+<li><a href="$AAB_URL" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download AAB</span></a></li>}
-        ${IPA_URL:+<li><a href="$IPA_URL" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download IPA</span></a></li>}
+        %s
+        %s
+        %s
       </ul>
       <div style='margin: 24px 0;'>
-        <a href="$RESUME_URL" style='background:#1a56db; color:#fff; border-radius:6px; padding:8px 18px; text-decoration:none; margin-right:12px;'>▶️ Resume Build</a>
-        <a href="$LOG_URL" style='background:#f1f5f9; color:#222; border-radius:6px; padding:8px 18px; text-decoration:none;'>📄 View Logs</a>
+        <a href="%s" style='background:#1a56db; color:#fff; border-radius:6px; padding:8px 18px; text-decoration:none; margin-right:12px;'>▶️ Resume Build</a>
+        <a href="%s" style='background:#f1f5f9; color:#222; border-radius:6px; padding:8px 18px; text-decoration:none;'>📄 View Logs</a>
       </div>
       <div style='font-size:0.95em; color:#888;'>Styled by QuikApp Portal UI • quikapp.co</div>
     </div>
   </body>
 </html>
-"""
+EOF
+)
+EMAIL_BODY=$(printf "$EMAIL_BODY" "$APP_NAME" "$WORKFLOW" "$DATE" "$STATUS" \
+  "${APK_URL:+<li><a href=\"$APK_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download APK</span></a></li>}" \
+  "${AAB_URL:+<li><a href=\"$AAB_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download AAB</span></a></li>}" \
+  "${IPA_URL:+<li><a href=\"$IPA_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download IPA</span></a></li>}" \
+  "$RESUME_URL" "$LOG_URL")
 
 # Source SMTP variables if available
 if [ -f "lib/scripts/utils/variables.sh" ]; then
@@ -63,15 +69,19 @@ tls_starttls on
 tls_trust_file /etc/ssl/certs/ca-certificates.crt
 EOF
   chmod 600 /tmp/msmtp_quikapp.conf
-  echo "$EMAIL_BODY" | msmtp --file=/tmp/msmtp_quikapp.conf --from="$EMAIL_FROM" -t <<EOM
-To: $EMAIL_TO
-Subject: $SUBJECT
-MIME-Version: 1.0
-Content-Type: text/html; charset=UTF-8
-From: $EMAIL_FROM
-
-$EMAIL_BODY
-EOM
+  # Write the email body to a temp file
+  EMAIL_TMP_FILE=$(mktemp)
+  {
+    echo "To: $EMAIL_TO"
+    echo "Subject: $SUBJECT"
+    echo "MIME-Version: 1.0"
+    echo "Content-Type: text/html; charset=UTF-8"
+    echo "From: $EMAIL_FROM"
+    echo ""
+    echo "$EMAIL_BODY"
+  } > "$EMAIL_TMP_FILE"
+  msmtp --file=/tmp/msmtp_quikapp.conf --from="$EMAIL_FROM" -t < "$EMAIL_TMP_FILE"
+  rm -f "$EMAIL_TMP_FILE"
   exit $?
 fi
 
