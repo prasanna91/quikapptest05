@@ -76,22 +76,21 @@ workflows:
           echo "Downloading Flutter 3.8.1..."
           curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
             echo "Failed to download Flutter. Trying alternative URL..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip || {
+              echo "Failed to download Flutter. Trying git clone..."
+              git clone -b 3.8.1 https://github.com/flutter/flutter.git "$HOME/flutter"
+            }
           }
 
-          # Verify download
-          if [ ! -f flutter.zip ]; then
-            echo "Error: Failed to download Flutter"
-            exit 1
+          # If we downloaded a zip file, extract it
+          if [ -f flutter.zip ]; then
+            echo "Extracting Flutter..."
+            unzip -o flutter.zip -d "$HOME" || {
+              echo "Error: Failed to extract Flutter"
+              exit 1
+            }
+            rm flutter.zip
           fi
-
-          # Extract Flutter
-          echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME" || {
-            echo "Error: Failed to extract Flutter"
-            exit 1
-          }
-          rm flutter.zip
 
           # Update PATH
           export PATH="$HOME/flutter/bin:$PATH"
@@ -196,22 +195,21 @@ workflows:
           echo "Downloading Flutter 3.8.1..."
           curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
             echo "Failed to download Flutter. Trying alternative URL..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip || {
+              echo "Failed to download Flutter. Trying git clone..."
+              git clone -b 3.8.1 https://github.com/flutter/flutter.git "$HOME/flutter"
+            }
           }
 
-          # Verify download
-          if [ ! -f flutter.zip ]; then
-            echo "Error: Failed to download Flutter"
-            exit 1
+          # If we downloaded a zip file, extract it
+          if [ -f flutter.zip ]; then
+            echo "Extracting Flutter..."
+            unzip -o flutter.zip -d "$HOME" || {
+              echo "Error: Failed to extract Flutter"
+              exit 1
+            }
+            rm flutter.zip
           fi
-
-          # Extract Flutter
-          echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME" || {
-            echo "Error: Failed to extract Flutter"
-            exit 1
-          }
-          rm flutter.zip
 
           # Update PATH
           export PATH="$HOME/flutter/bin:$PATH"
@@ -315,22 +313,21 @@ workflows:
           echo "Downloading Flutter 3.8.1..."
           curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
             echo "Failed to download Flutter. Trying alternative URL..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip || {
+              echo "Failed to download Flutter. Trying git clone..."
+              git clone -b 3.8.1 https://github.com/flutter/flutter.git "$HOME/flutter"
+            }
           }
 
-          # Verify download
-          if [ ! -f flutter.zip ]; then
-            echo "Error: Failed to download Flutter"
-            exit 1
+          # If we downloaded a zip file, extract it
+          if [ -f flutter.zip ]; then
+            echo "Extracting Flutter..."
+            unzip -o flutter.zip -d "$HOME" || {
+              echo "Error: Failed to extract Flutter"
+              exit 1
+            }
+            rm flutter.zip
           fi
-
-          # Extract Flutter
-          echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME" || {
-            echo "Error: Failed to extract Flutter"
-            exit 1
-          }
-          rm flutter.zip
 
           # Update PATH
           export PATH="$HOME/flutter/bin:$PATH"
