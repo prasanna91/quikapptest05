@@ -83,7 +83,7 @@ workflows:
           # Update dependencies
           echo "Updating project dependencies..."
           flutter pub get
-          flutter pub upgrade
+
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -177,7 +177,7 @@ workflows:
           # Update dependencies
           echo "Updating project dependencies..."
           flutter pub get
-          flutter pub upgrade
+
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -270,7 +270,7 @@ workflows:
           # Update dependencies
           echo "Updating project dependencies..."
           flutter pub get
-          flutter pub upgrade
+
       - name: Install FVM
         script: |
           dart pub global activate fvm
