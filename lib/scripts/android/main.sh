@@ -76,7 +76,7 @@ log "[DEBUG] CM_KEY_ALIAS: $CM_KEY_ALIAS"
 log "[DEBUG] CM_KEY_PASSWORD: $CM_KEY_PASSWORD"
 
 # Validate required variables
-REQUIRED_VARS=(APP_ID APP_NAME PKG_NAME VERSION_NAME VERSION_CODE OUTPUT_DIR)
+REQUIRED_VARS=(APP_NAME PKG_NAME VERSION_NAME VERSION_CODE OUTPUT_DIR)
 for var in "${REQUIRED_VARS[@]}"; do
   if [ -z "${!var:-}" ]; then
     log "[ERROR] Required variable $var is not set."
