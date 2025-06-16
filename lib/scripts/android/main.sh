@@ -230,35 +230,88 @@ log "Setting up Firebase..."
 if [ "${PUSH_NOTIFY:-}" = "true" ]; then
   log "PUSH_NOTIFY is true; setting up Firebase config..."
   
-  # Check if Firebase config URL is provided
+  # Check if Firebase config is provided
   if [ -z "${FIREBASE_CONFIG_ANDROID:-}" ]; then
     log "[ERROR] FIREBASE_CONFIG_ANDROID environment variable is not set"
     exit 1
   fi
 
-  # Download Firebase config
-  log "Downloading google-services.json for Firebase..."
-  MAX_RETRIES=3
-  RETRY_COUNT=0
-  SUCCESS=false
+  # Remove existing google-services.json if present
+  if [ -f "android/app/google-services.json" ]; then
+    log "Removing existing google-services.json..."
+    rm "android/app/google-services.json"
+  fi
 
-  while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
-    if curl -L -o "android/app/google-services.json" "${FIREBASE_CONFIG_ANDROID}"; then
-      SUCCESS=true
-      log "Successfully downloaded google-services.json"
+  # Create assets directory if it doesn't exist
+  mkdir -p "assets"
+
+  # Check if the config is a local file or URL
+  if [ -f "${FIREBASE_CONFIG_ANDROID}" ]; then
+    # It's a local file, copy it directly
+    log "Using local Firebase config file..."
+    cp "${FIREBASE_CONFIG_ANDROID}" "android/app/google-services.json"
+    if [ $? -eq 0 ]; then
+      log "Successfully copied local google-services.json"
+      # Also copy to assets folder for Dart validation
+      cp "${FIREBASE_CONFIG_ANDROID}" "assets/google-services.json"
+      log "Copied google-services.json to assets folder for Dart validation"
     else
-      RETRY_COUNT=$((RETRY_COUNT + 1))
-      if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-        log "[WARN] Failed to download google-services.json (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
-        sleep 2
-      fi
+      log "[ERROR] Failed to copy local google-services.json"
+      exit 1
     fi
-  done
+  else
+    # It's a URL, try downloading with curl first, then wget
+    log "Downloading google-services.json from URL..."
+    MAX_RETRIES=3
+    RETRY_COUNT=0
+    SUCCESS=false
 
-  if [ "$SUCCESS" = false ]; then
-    log "[ERROR] Failed to download google-services.json after $MAX_RETRIES attempts."
-    log "[ERROR] Please check if FIREBASE_CONFIG_ANDROID URL is correct: ${FIREBASE_CONFIG_ANDROID}"
-    exit 1
+    # URL encode the Firebase config URL
+    ENCODED_URL=$(echo "${FIREBASE_CONFIG_ANDROID}" | sed 's/ /%20/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+    log "Using encoded URL: ${ENCODED_URL}"
+
+    # Try curl first
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
+      if curl -L -o "android/app/google-services.json" "${ENCODED_URL}"; then
+        SUCCESS=true
+        log "Successfully downloaded google-services.json using curl"
+      else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+          log "[WARN] Failed to download with curl (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
+          sleep 2
+        fi
+      fi
+    done
+
+    # If curl failed, try wget
+    if [ "$SUCCESS" = false ]; then
+      log "Curl failed, trying wget..."
+      RETRY_COUNT=0
+      while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
+        if wget -O "android/app/google-services.json" "${ENCODED_URL}"; then
+          SUCCESS=true
+          log "Successfully downloaded google-services.json using wget"
+        else
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            log "[WARN] Failed to download with wget (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
+            sleep 2
+          fi
+        fi
+      done
+    fi
+
+    if [ "$SUCCESS" = true ]; then
+      # Copy to assets folder for Dart validation
+      cp "android/app/google-services.json" "assets/google-services.json"
+      log "Copied google-services.json to assets folder for Dart validation"
+    else
+      log "[ERROR] Failed to download google-services.json after all attempts."
+      log "[ERROR] Original URL: ${FIREBASE_CONFIG_ANDROID}"
+      log "[ERROR] Encoded URL: ${ENCODED_URL}"
+      exit 1
+    fi
   fi
 else
   log "PUSH_NOTIFY is false; skipping Firebase config."
