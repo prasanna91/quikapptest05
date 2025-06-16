@@ -10,11 +10,11 @@ log() {
 log "Starting Combined Android & iOS workflow"
 
 # Load dynamic variables
-if [ -f "lib/scripts/utils/load_vars.sh" ]; then
-  source lib/scripts/utils/load_vars.sh
-else
-  log "[WARN] Variable loader not found. Using environment variables."
-fi
+#if [ -f "lib/scripts/utils/load_vars.sh" ]; then
+#  source lib/scripts/utils/load_vars.sh
+#else
+#  log "[WARN] Variable loader not found. Using environment variables."
+#fi
 
 # Debug print all key variables for Codemagic verification
 log "[DEBUG] APP_NAME: $APP_NAME"
