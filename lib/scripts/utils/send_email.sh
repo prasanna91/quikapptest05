@@ -77,7 +77,7 @@ fi
 
 # Send email (using mailx or sendmail)
 if command -v mailx >/dev/null 2>&1; then
-  echo "$EMAIL_BODY" | mailx -a "Content-type: text/html; charset=UTF-8" -s "$SUBJECT" -r "$EMAIL_FROM" "$EMAIL_TO"
+  echo "$EMAIL_BODY" | mailx -s "$SUBJECT" -r "$EMAIL_FROM" -S "content-type=text/html" "$EMAIL_TO"
 elif command -v sendmail >/dev/null 2>&1; then
   {
     echo "To: $EMAIL_TO"

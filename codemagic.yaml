@@ -2,6 +2,7 @@ workflows:
   android-free:
     name: Android-Free
     environment:
+      flutter: 3.22.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -68,6 +69,7 @@ workflows:
   android-paid:
     name: Android-Paid
     environment:
+      flutter: 3.22.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -133,6 +135,7 @@ workflows:
   android-publish:
     name: Android-Publish
     environment:
+      flutter: 3.22.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -199,6 +202,7 @@ workflows:
   ios-only:
     name: iOS-Only
     environment:
+      flutter: 3.22.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -264,6 +268,7 @@ workflows:
   combined:
     name: Combined Android & iOS
     environment:
+      flutter: 3.22.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -327,7 +332,6 @@ workflows:
       - output/android/*.apk
       - output/android/*.aab
       - output/ios/*.ipa
-
 #  local:
 #    name: Local Test (QuikApp Vars)
 #    environment:
