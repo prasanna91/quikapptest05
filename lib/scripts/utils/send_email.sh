@@ -87,8 +87,8 @@ fi
 
 # Send email (using mailx or sendmail)
 if command -v mailx >/dev/null 2>&1; then
-  # BSD mailx does not support -r, use -S from=... if available
-  echo "$EMAIL_BODY" | mailx -s "$SUBJECT" -S "from=$EMAIL_FROM" -S "content-type=text/html" "$EMAIL_TO"
+  # BSD mailx does not support -r or -S flags; cannot set sender or content-type
+  echo "$EMAIL_BODY" | mailx -s "$SUBJECT" "$EMAIL_TO"
 elif command -v sendmail >/dev/null 2>&1; then
   {
     echo "To: $EMAIL_TO"
