@@ -9,13 +9,6 @@ log() {
 
 log "Starting iOS-Only workflow (Code Signed IPA)"
 
-# Load dynamic variables
-#if [ -f "lib/scripts/utils/load_vars.sh" ]; then
-#  source lib/scripts/utils/load_vars.sh
-#else
-#  log "[WARN] Variable loader not found. Using environment variables."
-#fi
-
 # Debug print all key variables for Codemagic verification
 log "[DEBUG] APP_NAME: $APP_NAME"
 log "[DEBUG] PKG_NAME: $PKG_NAME"
@@ -75,7 +68,7 @@ log "[DEBUG] CM_KEY_ALIAS: $CM_KEY_ALIAS"
 log "[DEBUG] CM_KEY_PASSWORD: $CM_KEY_PASSWORD"
 
 # Validate required variables
-REQUIRED_VARS=(APP_ID APP_NAME BUNDLE_ID VERSION_NAME VERSION_CODE OUTPUT_DIR APPLE_TEAM_ID APNS_KEY_ID APNS_AUTH_KEY_URL CERT_PASSWORD PROFILE_URL CERT_CER_URL CERT_KEY_URL EXPORT_PROFILE_TYPE)
+REQUIRED_VARS=(APP_NAME BUNDLE_ID VERSION_NAME VERSION_CODE OUTPUT_DIR APPLE_TEAM_ID APNS_KEY_ID APNS_AUTH_KEY_URL CERT_PASSWORD PROFILE_URL CERT_CER_URL CERT_KEY_URL EXPORT_PROFILE_TYPE)
 for var in "${REQUIRED_VARS[@]}"; do
   if [ -z "${!var:-}" ]; then
     log "[ERROR] Required variable $var is not set."

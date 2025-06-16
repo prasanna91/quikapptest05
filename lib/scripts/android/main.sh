@@ -110,8 +110,17 @@ fi
 echo "[DART ENV] Generating Dart env file..."
 bash lib/scripts/utils/gen_dart_env.sh
 
-# Detect workflow type
-WORKFLOW_ID_LOWER=$(echo "${WORKFLOW_ID:-android-free}" | tr '[:upper:]' '[:lower:]')
+# Determine workflow based on PUSH_NOTIFY and KEY_STORE
+WORKFLOW_ID_LOWER=""
+if [[ "${PUSH_NOTIFY,,}" == "true" && -z "${KEY_STORE}" ]]; then
+  WORKFLOW_ID_LOWER="android-paid"
+elif [[ "${PUSH_NOTIFY,,}" == "true" && -n "${KEY_STORE}" ]]; then
+  WORKFLOW_ID_LOWER="android-publish"
+elif [[ "${PUSH_NOTIFY,,}" != "true" && -z "${KEY_STORE}" ]]; then
+  WORKFLOW_ID_LOWER="android-free"
+else
+  WORKFLOW_ID_LOWER="android-free"
+fi
 
 if [[ "$WORKFLOW_ID_LOWER" == "android-paid" ]]; then
   log "Android-Paid workflow: Firebase enabled, Keystore disabled."
