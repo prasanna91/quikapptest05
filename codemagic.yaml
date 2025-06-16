@@ -74,12 +74,23 @@ workflows:
 
           # Download Flutter 3.8.1
           echo "Downloading Flutter 3.8.1..."
-          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+          curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
+            echo "Failed to download Flutter. Trying alternative URL..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+          }
+
+          # Verify download
+          if [ ! -f flutter.zip ]; then
+            echo "Error: Failed to download Flutter"
+            exit 1
+          fi
 
           # Extract Flutter
           echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME"
-          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          unzip -o flutter.zip -d "$HOME" || {
+            echo "Error: Failed to extract Flutter"
+            exit 1
+          }
           rm flutter.zip
 
           # Update PATH
@@ -87,7 +98,10 @@ workflows:
 
           # Run Flutter doctor
           echo "Running Flutter doctor..."
-          flutter doctor -v
+          flutter doctor -v || {
+            echo "Error: Flutter doctor failed"
+            exit 1
+          }
 
           # Verify version
           echo "Current Flutter version:"
@@ -180,12 +194,23 @@ workflows:
 
           # Download Flutter 3.8.1
           echo "Downloading Flutter 3.8.1..."
-          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+          curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
+            echo "Failed to download Flutter. Trying alternative URL..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+          }
+
+          # Verify download
+          if [ ! -f flutter.zip ]; then
+            echo "Error: Failed to download Flutter"
+            exit 1
+          fi
 
           # Extract Flutter
           echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME"
-          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          unzip -o flutter.zip -d "$HOME" || {
+            echo "Error: Failed to extract Flutter"
+            exit 1
+          }
           rm flutter.zip
 
           # Update PATH
@@ -193,7 +218,10 @@ workflows:
 
           # Run Flutter doctor
           echo "Running Flutter doctor..."
-          flutter doctor -v
+          flutter doctor -v || {
+            echo "Error: Flutter doctor failed"
+            exit 1
+          }
 
           # Verify version
           echo "Current Flutter version:"
@@ -285,12 +313,23 @@ workflows:
 
           # Download Flutter 3.8.1
           echo "Downloading Flutter 3.8.1..."
-          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+          curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip || {
+            echo "Failed to download Flutter. Trying alternative URL..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.8.1-stable.zip" -o flutter.zip
+          }
+
+          # Verify download
+          if [ ! -f flutter.zip ]; then
+            echo "Error: Failed to download Flutter"
+            exit 1
+          fi
 
           # Extract Flutter
           echo "Extracting Flutter..."
-          unzip -o flutter.zip -d "$HOME"
-          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          unzip -o flutter.zip -d "$HOME" || {
+            echo "Error: Failed to extract Flutter"
+            exit 1
+          }
           rm flutter.zip
 
           # Update PATH
@@ -298,7 +337,10 @@ workflows:
 
           # Run Flutter doctor
           echo "Running Flutter doctor..."
-          flutter doctor -v
+          flutter doctor -v || {
+            echo "Error: Flutter doctor failed"
+            exit 1
+          }
 
           # Verify version
           echo "Current Flutter version:"
