@@ -225,16 +225,43 @@ else
   log "[WARN] Permissions sub-script not found. Skipping permissions setup."
 fi
 
-# Firebase setup (if enabled by PUSH_NOTIFY or Firebase config)
-if [ "${PUSH_NOTIFY:-false}" = "true" ] || [ -n "${firebase_config_android:-}" ]; then
-  log "Setting up Firebase..."
-  if [ -f "lib/scripts/android/firebase.sh" ]; then
-    bash lib/scripts/android/firebase.sh
-  else
-    log "[WARN] Firebase sub-script not found. Skipping Firebase setup."
+# Setting up Firebase
+log "Setting up Firebase..."
+if [ "${PUSH_NOTIFY:-}" = "true" ]; then
+  log "PUSH_NOTIFY is true; setting up Firebase config..."
+  
+  # Check if Firebase config URL is provided
+  if [ -z "${FIREBASE_CONFIG_ANDROID:-}" ]; then
+    log "[ERROR] FIREBASE_CONFIG_ANDROID environment variable is not set"
+    exit 1
+  fi
+
+  # Download Firebase config
+  log "Downloading google-services.json for Firebase..."
+  MAX_RETRIES=3
+  RETRY_COUNT=0
+  SUCCESS=false
+
+  while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
+    if curl -L -o "android/app/google-services.json" "${FIREBASE_CONFIG_ANDROID}"; then
+      SUCCESS=true
+      log "Successfully downloaded google-services.json"
+    else
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+      if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        log "[WARN] Failed to download google-services.json (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
+        sleep 2
+      fi
+    fi
+  done
+
+  if [ "$SUCCESS" = false ]; then
+    log "[ERROR] Failed to download google-services.json after $MAX_RETRIES attempts."
+    log "[ERROR] Please check if FIREBASE_CONFIG_ANDROID URL is correct: ${FIREBASE_CONFIG_ANDROID}"
+    exit 1
   fi
 else
-  log "PUSH_NOTIFY is false and no Firebase config detected; skipping Firebase setup."
+  log "PUSH_NOTIFY is false; skipping Firebase config."
 fi
 
 # Keystore setup (if KEY_STORE is set)
