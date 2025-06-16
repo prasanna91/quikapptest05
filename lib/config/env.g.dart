@@ -32,9 +32,7 @@ class Env {
   static const String exportSPLASH_TAGLINE_COLOR = "#333333";
   static const String exportSPLASH_ANIMATION = "none";
   static const String exportSPLASH_DURATION = "2";
-  static const String exportBOTTOMMENU_ITEMS = """
-      '[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'
-      """;
+  static const String exportBOTTOMMENU_ITEMS = """'[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'""";
   static const String exportBOTTOMMENU_BG_COLOR = "#FFFFFF";
   static const String exportBOTTOMMENU_ICON_COLOR = "#888888";
   static const String exportBOTTOMMENU_TEXT_COLOR = "#888888";

@@ -18,7 +18,11 @@ if [[ "${PUSH_NOTIFY:-false}" == "true" ]]; then
     if [ -f assets/google-services.json ]; then
       rm -f assets/google-services.json
     fi
-    wget --tries=3 --wait=5 -O android/app/google-services.json "$firebase_config_android" || {
+    
+    # URL encode the config URL
+    ENCODED_URL=$(echo "$firebase_config_android" | sed 's/ /%20/g; s/(/%28/g; s/)/%29/g')
+    
+    wget --tries=3 --wait=5 -O android/app/google-services.json "$ENCODED_URL" || {
       log "[WARN] Failed to download google-services.json after 3 attempts. Sending Firebase guidance email."
       send_firebase_guidance
       exit 1

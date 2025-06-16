@@ -66,7 +66,6 @@ password "${DEFAULT_SMTP_PASS:-}"
 from "${EMAIL_FROM}"
 tls on
 tls_starttls on
-tls_trust_file /etc/ssl/certs/ca-certificates.crt
 EOF
   chmod 600 /tmp/msmtp_quikapp.conf
   # Write the email body to a temp file
