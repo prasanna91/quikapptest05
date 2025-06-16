@@ -11,11 +11,19 @@ send_firebase_guidance() {
 if [[ "${PUSH_NOTIFY:-false}" == "true" ]]; then
   if [ -n "${firebase_config_android:-}" ]; then
     log "Downloading google-services.json for Firebase..."
-    if ! curl -sSL "$firebase_config_android" -o android/app/google-services.json; then
-      log "[WARN] Failed to download google-services.json. Sending Firebase guidance email."
+    mkdir -p android/app assets
+    if [ -f android/app/google-services.json ]; then
+      rm -f android/app/google-services.json
+    fi
+    if [ -f assets/google-services.json ]; then
+      rm -f assets/google-services.json
+    fi
+    wget --tries=3 --wait=5 -O android/app/google-services.json "$firebase_config_android" || {
+      log "[WARN] Failed to download google-services.json after 3 attempts. Sending Firebase guidance email."
       send_firebase_guidance
       exit 1
-    fi
+    }
+    cp android/app/google-services.json assets/google-services.json
     log "Firebase config injected."
   else
     log "[WARN] firebase_config_android not set. Sending Firebase guidance email."
