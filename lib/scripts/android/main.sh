@@ -150,6 +150,135 @@ log "=== End Environment Variables Debug ==="
 
 log "Starting Android build workflow..."
 
+# Function to validate Flutter environment
+validate_flutter_env() {
+  log "Validating Flutter environment..."
+  
+  # Check Flutter installation
+  if ! command -v flutter &> /dev/null; then
+    log "[ERROR] Flutter is not installed or not in PATH"
+    exit 1
+  fi
+
+  # Check Flutter doctor
+  log "Running Flutter doctor..."
+  if ! flutter doctor -v; then
+    log "[ERROR] Flutter doctor reported issues. Please fix them before proceeding."
+    exit 1
+  fi
+
+  # Check Android toolchain
+  if ! flutter doctor --android-licenses; then
+    log "[WARN] Android licenses not accepted. Attempting to accept..."
+    yes | flutter doctor --android-licenses || {
+      log "[ERROR] Failed to accept Android licenses"
+      exit 1
+    }
+  fi
+}
+
+# Function to check and set Flutter version
+check_flutter_version() {
+  log "Checking Flutter version..."
+  
+  # Get current Flutter version
+  CURRENT_FLUTTER_VERSION=$(flutter --version | grep -o "Flutter [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
+  log "Current Flutter version: $CURRENT_FLUTTER_VERSION"
+  
+  # Get current Dart version
+  CURRENT_DART_VERSION=$(flutter --version | grep -o "Dart [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
+  log "Current Dart version: $CURRENT_DART_VERSION"
+  
+  # Get required versions from pubspec.yaml
+  if [ -f "pubspec.yaml" ]; then
+    # Get Flutter SDK version
+    REQUIRED_FLUTTER_VERSION=$(grep -A1 "sdk:" pubspec.yaml | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "")
+    
+    # Get Dart SDK version
+    REQUIRED_DART_VERSION=$(grep -A2 "sdk:" pubspec.yaml | grep -o ">= [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2 || echo "")
+    
+    if [ -n "$REQUIRED_FLUTTER_VERSION" ]; then
+      log "Required Flutter version from pubspec.yaml: $REQUIRED_FLUTTER_VERSION"
+      log "Required Dart version from pubspec.yaml: $REQUIRED_DART_VERSION"
+      
+      # Check Flutter version
+      if [ "$CURRENT_FLUTTER_VERSION" != "$REQUIRED_FLUTTER_VERSION" ]; then
+        log "Flutter version mismatch. Attempting to switch to version $REQUIRED_FLUTTER_VERSION..."
+        
+        # Try to switch Flutter version
+        if flutter version $REQUIRED_FLUTTER_VERSION; then
+          log "Successfully switched to Flutter version $REQUIRED_FLUTTER_VERSION"
+        else
+          log "[ERROR] Failed to switch Flutter version. Please ensure Flutter version $REQUIRED_FLUTTER_VERSION is installed."
+          exit 1
+        fi
+      fi
+      
+      # Check Dart version
+      if [ -n "$REQUIRED_DART_VERSION" ] && [ "$CURRENT_DART_VERSION" != "$REQUIRED_DART_VERSION" ]; then
+        log "[WARN] Dart version mismatch. Current: $CURRENT_DART_VERSION, Required: $REQUIRED_DART_VERSION"
+        log "This might cause issues. Consider updating your Flutter installation."
+      fi
+    else
+      log "[WARN] Could not determine required Flutter version from pubspec.yaml"
+    fi
+  else
+    log "[ERROR] pubspec.yaml not found"
+    exit 1
+  fi
+}
+
+# Function to clean and prepare Flutter project
+prepare_flutter_project() {
+  log "Preparing Flutter project..."
+  
+  # Clean Flutter
+  log "Cleaning Flutter project..."
+  flutter clean || {
+    log "[ERROR] Failed to clean Flutter project"
+    exit 1
+  }
+  
+  # Delete build directory if it exists
+  if [ -d "build" ]; then
+    log "Removing build directory..."
+    rm -rf build
+  fi
+  
+  # Delete .dart_tool directory if it exists
+  if [ -d ".dart_tool" ]; then
+    log "Removing .dart_tool directory..."
+    rm -rf .dart_tool
+  fi
+  
+  # Get dependencies
+  log "Getting Flutter dependencies..."
+  flutter pub get || {
+    log "[ERROR] Failed to get Flutter dependencies"
+    exit 1
+  }
+  
+  # Verify pub get was successful
+  if [ ! -f ".packages" ]; then
+    log "[ERROR] .packages file not found after flutter pub get"
+    exit 1
+  fi
+}
+
+# Main setup sequence
+log "Starting Flutter environment setup..."
+
+# Validate Flutter environment
+validate_flutter_env
+
+# Check and set Flutter version
+check_flutter_version
+
+# Prepare Flutter project
+prepare_flutter_project
+
+log "Flutter environment setup completed successfully."
+
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow
 WORKFLOW_VERSION="1.0.0" # Default workflow version (can be updated dynamically)
@@ -231,7 +360,7 @@ if [ "${PUSH_NOTIFY:-}" = "true" ]; then
   log "PUSH_NOTIFY is true; setting up Firebase config..."
   
   # Check if Firebase config is provided
-  if [ -z "${FIREBASE_CONFIG_ANDROID:-}" ]; then
+  if [ -z "${firebase_config_android:-}" ]; then
     log "[ERROR] FIREBASE_CONFIG_ANDROID environment variable is not set"
     exit 1
   fi
@@ -246,14 +375,14 @@ if [ "${PUSH_NOTIFY:-}" = "true" ]; then
   mkdir -p "assets"
 
   # Check if the config is a local file or URL
-  if [ -f "${FIREBASE_CONFIG_ANDROID}" ]; then
+  if [ -f "${firebase_config_android}" ]; then
     # It's a local file, copy it directly
     log "Using local Firebase config file..."
-    cp "${FIREBASE_CONFIG_ANDROID}" "android/app/google-services.json"
+    cp "${firebase_config_android}" "android/app/google-services.json"
     if [ $? -eq 0 ]; then
       log "Successfully copied local google-services.json"
       # Also copy to assets folder for Dart validation
-      cp "${FIREBASE_CONFIG_ANDROID}" "assets/google-services.json"
+      cp "${firebase_config_android}" "assets/google-services.json"
       log "Copied google-services.json to assets folder for Dart validation"
     else
       log "[ERROR] Failed to copy local google-services.json"
@@ -267,7 +396,7 @@ if [ "${PUSH_NOTIFY:-}" = "true" ]; then
     SUCCESS=false
 
     # URL encode the Firebase config URL
-    ENCODED_URL=$(echo "${FIREBASE_CONFIG_ANDROID}" | sed 's/ /%20/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+    ENCODED_URL=$(echo "${firebase_config_android}" | sed 's/ /%20/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
     log "Using encoded URL: ${ENCODED_URL}"
 
     # Try curl first
@@ -308,7 +437,7 @@ if [ "${PUSH_NOTIFY:-}" = "true" ]; then
       log "Copied google-services.json to assets folder for Dart validation"
     else
       log "[ERROR] Failed to download google-services.json after all attempts."
-      log "[ERROR] Original URL: ${FIREBASE_CONFIG_ANDROID}"
+      log "[ERROR] Original URL: ${firebase_config_android}"
       log "[ERROR] Encoded URL: ${ENCODED_URL}"
       exit 1
     fi
