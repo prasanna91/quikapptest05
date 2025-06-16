@@ -1,0 +1,211 @@
+QuikApp Project Setup & Development Directives (Unified Spec)
+🎯 Objective
+Establish a standardized, automation-ready development ecosystem for the QuikApp project, supporting both Android and iOS mobile builds using Codemagic CI/CD. This includes dynamic variable injection, strict script organization, and consistent output packaging.
+
+📦 Project Context
+QuikApp is a modular mobile platform governed by tightly controlled scripting rules and centralized configuration APIs. It handles branding, permissions, keystore/cert management, and CI logic dynamically to support scalable app builds for Android and iOS.
+
+All workflows must be executed via Codemagic using the appropriate entrypoint script, and no hardcoded values are permitted.
+
+🧱 Core Development Rules
+1. 🧾 Workflow Entrypoint Scripts
+Each major workflow must be initiated through its dedicated shell script:
+
+Workflow Type	Entrypoint Script Path
+Android-only	lib/scripts/android/main.sh
+iOS-only (IPA)	lib/scripts/ios/main.sh
+Combined (AAB+IPA)	lib/scripts/combined/main.sh
+
+These scripts will be called by codemagic.yaml based on the selected WORKFLOW_ID.
+
+2. ⚠️ Script Design Requirements
+Entrypoint scripts must:
+
+Call all submodules responsibly.
+
+Contain full logging and set -e/trap for error trace.
+
+Use exit 0 or exit 1 for CI decisions.
+
+Sub-scripts may exist under: lib/scripts/utils/, lib/scripts/android/, lib/scripts/ios/.
+
+3. 📩 Email Notification System
+Email UI must match QuikApp Portal UI.
+
+Shows status, download links, and buttons (Resume/View Logs).
+
+HTML-styled badge colors and links based on workflow outcome.
+
+🌐 Variable Injection Policy
+🚫 No Hardcoding Policy
+All configuration must come from an API or admin config file.
+
+Admin variables are placeholders for future database-sourced values.
+
+✅ Dynamic Variable Categories
+Application Metadata
+text
+Copy
+Edit
+APP_ID, WORKFLOW_ID, BRANCH, VERSION_NAME, VERSION_CODE
+APP_NAME, ORG_NAME, WEB_URL, EMAIL_ID
+Package Identifiers
+text
+Copy
+Edit
+PKG_NAME (Android), BUNDLE_ID (iOS)
+Feature Flags
+text
+Copy
+Edit
+PUSH_NOTIFY, IS_CHATBOT, IS_DEEPLINK, IS_SPLASH, IS_PULLDOWN
+IS_BOTTOMMENU, IS_LOAD_IND, IS_CAMERA, IS_LOCATION
+IS_MIC, IS_NOTIFICATION, IS_CONTACT, IS_BIOMETRIC, IS_CALENDAR, IS_STORAGE
+UI/Branding (Dynamic)
+text
+Copy
+Edit
+LOGO_URL, SPLASH_URL, SPLASH_BG, SPLASH_BG_COLOR, SPLASH_TAGLINE
+SPLASH_TAGLINE_COLOR, SPLASH_ANIMATION, SPLASH_DURATION
+BOTTOMMENU_ITEMS (JSON), BOTTOMMENU_BG_COLOR, BOTTOMMENU_ICON_COLOR
+BOTTOMMENU_TEXT_COLOR, BOTTOMMENU_FONT, BOTTOMMENU_FONT_SIZE
+BOTTOMMENU_FONT_BOLD, BOTTOMMENU_FONT_ITALIC, BOTTOMMENU_ACTIVE_TAB_COLOR
+BOTTOMMENU_ICON_POSITION, BOTTOMMENU_VISIBLE_ON
+Firebase
+text
+Copy
+Edit
+FIREBASE_CONFIG_ANDROID, FIREBASE_CONFIG_IOS
+iOS Signing
+text
+Copy
+Edit
+APPLE_TEAM_ID, APNS_KEY_ID, APNS_AUTH_KEY_URL
+CERT_PASSWORD, PROFILE_URL, CERT_CER_URL, CERT_KEY_URL
+APP_STORE_CONNECT_KEY_IDENTIFIER
+Android Keystore
+text
+Copy
+Edit
+KEY_STORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
+⚙️ Admin / Build Environment Variables
+Defined in config defaults or balance variable source:
+
+text
+Copy
+Edit
+CM_BUILD_DIR, BUILD_MODE, FLUTTER_VERSION, GRADLE_VERSION, JAVA_VERSION
+ANDROID_COMPILE_SDK, ANDROID_MIN_SDK, ANDROID_TARGET_SDK, ANDROID_BUILD_TOOLS
+ANDROID_NDK_VERSION, ANDROID_CMDLINE_TOOLS
+
+PROJECT_ROOT, ANDROID_ROOT, ASSETS_DIR, OUTPUT_DIR, TEMP_DIR
+
+ANDROID_MANIFEST_PATH, ANDROID_BUILD_GRADLE_PATH, ANDROID_KEY_PROPERTIES_PATH
+ANDROID_FIREBASE_CONFIG_PATH, ANDROID_MIPMAP_DIR, ANDROID_DRAWABLE_DIR
+
+APP_ICON_PATH, SPLASH_IMAGE_PATH, SPLASH_BG_PATH, PUBSPEC_BACKUP_PATH
+
+APK_OUTPUT_PATH, AAB_OUTPUT_PATH
+
+GRADLE_WRAPPER_DIR, GRADLE_WRAPPER_JAR_PATH, GRADLE_WRAPPER_PROPERTIES_PATH
+GRADLE_WRAPPER_URL, GRADLE_DISTRIBUTION_URL, DOWNLOAD_MAX_RETRIES, DOWNLOAD_RETRY_DELAY
+
+NOTIFICATION_EMAIL_FROM, NOTIFI_E_ID, NOTIFICATION_EMAIL_TO, NOTIFICATION_EMAIL_SUBJECT
+
+ANDROID_KEYSTORE_BASE64, FIREBASE_ENABLED
+🏗️ Supported CI Workflows (Codemagic)
+✅ Workflow 1: Android-Free
+Entrypoint: lib/scripts/android/main.sh
+
+No Firebase, No Keystore
+
+Output: output/android/*.apk
+
+✅ Workflow 2: Android-Paid
+Entrypoint: lib/scripts/android/main.sh
+
+Firebase Yes, Keystore No
+
+Output: output/android/*.apk
+
+✅ Workflow 3: Android-Publish
+Entrypoint: lib/scripts/android/main.sh
+
+Firebase + Keystore enabled
+
+Output: output/android/*.apk + *.aab
+
+🆕 Workflow 4: iOS-Only (Code Signed IPA)
+Entrypoint: lib/scripts/ios/main.sh
+
+Input: .cer, .key, .mobileprovision
+
+Generate .p12 dynamically using openssl
+
+Output: output/ios/*.ipa
+
+Export Options
+
+bash
+Copy
+Edit
+EXPORT_PROFILE_TYPE=app-store | ad-hoc
+Sample .p12 Script
+
+bash
+Copy
+Edit
+openssl pkcs12 -export \
+  -inkey ios.key \
+  -in ios.cer \
+  -certfile ios.cer \
+  -out ios_cert.p12 \
+  -passout pass:$P12_EXPORT_PASSWORD
+🆕 Workflow 5: Combined Android & iOS
+Entrypoint: lib/scripts/combined/main.sh
+
+Runs Android logic → Then iOS logic
+
+Fully dynamic via shared variable injection
+
+Output
+
+text
+Copy
+Edit
+output/android/*.apk
+output/android/*.aab
+output/ios/*.ipa
+Permissions
+
+Android: Managed in AndroidManifest.xml
+
+iOS: Injected into Info.plist via script
+
+Build Order
+
+bash
+Copy
+Edit
+1. Fetch All Variables from API
+2. Validate & Decode Files (.cer/.key/.mobileprovision)
+3. Build Android → Store
+4. Generate .p12 → Build iOS IPA
+📬 Email Notification Format (HTML-Based)
+Template Layout
+
+less
+Copy
+Edit
+App Name: Whale Tech
+Workflow: Combined Android & iOS
+Date: 16/06/2025
+Status: ✅ Completed
+Artifacts:
+   [🔗 Download APK]
+   [🔗 Download AAB]
+   [🔗 Download IPA]
+
+[▶️ Resume Build]   [📄 View Logs]
+Styled using QuikApp Portal UI colors, icons, and font from quikapp.co and app.quikapp.co.
+

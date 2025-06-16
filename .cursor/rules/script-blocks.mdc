@@ -1,0 +1,244 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+🔧 1. App Versioning & Metadata
+Used in: All workflows (1–5)
+
+{
+  "VERSION_NAME": "1.0.22",
+  "VERSION_CODE": "27",
+  "APP_NAME": "Garbcode App",
+  "ORG_NAME": "Garbcode Apparels Private Limited",
+  "WEB_URL": "https://garbcode.com/",
+  "EMAIL_ID": "prasannasrinivasan32@gmail.com"
+}
+📦 2. Android Package & iOS Bundle Identifiers
+Used in: All workflows (1–5)
+
+
+{
+  "PKG_NAME": "com.garbcode.garbcodeapp",        // Android
+  "BUNDLE_ID": "com.garbcode.garbcodeapp"        // iOS
+}
+🚀 3. Feature Flags (App Capabilities)
+Used in: All workflows (1–5)
+Purpose: Enable/disable features in app via dynamic config or Manifest/Info.plist injection
+
+
+{
+  "PUSH_NOTIFY": "true",
+  "IS_CHATBOT": "true",
+  "IS_DEEPLINK": "true",
+  "IS_SPLASH": "true",
+  "IS_PULLDOWN": "true",
+  "IS_BOTTOMMENU": "false",
+  "IS_LOAD_IND": "true"
+}
+📱 4. Runtime Permissions (Android/iOS)
+Used in: All workflows
+Injected into: AndroidManifest.xml and Info.plist
+
+
+{
+  "IS_CAMERA": "false",
+  "IS_LOCATION": "false",
+  "IS_MIC": "true",
+  "IS_NOTIFICATION": "true",
+  "IS_CONTACT": "false",
+  "IS_BIOMETRIC": "false",
+  "IS_CALENDAR": "false",
+  "IS_STORAGE": "true"
+}
+🎨 5. Splash Screen Configuration
+Used in: All workflows
+For dynamic branding and startup visuals
+
+json
+Copy
+Edit
+{
+  "SPLASH": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png",
+  "SPLASH_BG": "",
+  "SPLASH_BG_COLOR": "#cbdbf5",
+  "SPLASH_TAGLINE": "Welcome to Garbcode",
+  "SPLASH_TAGLINE_COLOR": "#a30237",
+  "SPLASH_ANIMATION": "zoom",
+  "SPLASH_DURATION": "4"
+}
+🧭 6. Bottom Menu Configuration
+Used in: Workflows where IS_BOTTOMMENU is "true"
+
+
+{
+  "BOTTOMMENU_ITEMS": "[{\"label\": \"Home\", \"icon\": \"home\", \"url\": \"https://pixaware.co/\"}, {\"label\": \"services\", \"icon\": \"services\", \"url\": \"https://pixaware.co/solutions/\"}, {\"label\": \"About\", \"icon\": \"info\", \"url\": \"https://pixaware.co/who-we-are/\"}, {\"label\": \"Contact\", \"icon\": \"phone\", \"url\": \"https://pixaware.co/lets-talk/\"}]",
+  "BOTTOMMENU_BG_COLOR": "#FFFFFF",
+  "BOTTOMMENU_ICON_COLOR": "#6d6e8c",
+  "BOTTOMMENU_TEXT_COLOR": "#6d6e8c",
+  "BOTTOMMENU_FONT": "DM Sans",
+  "BOTTOMMENU_FONT_SIZE": "12",
+  "BOTTOMMENU_FONT_BOLD": "false",
+  "BOTTOMMENU_FONT_ITALIC": "false",
+  "BOTTOMMENU_ACTIVE_TAB_COLOR": "#a30237",
+  "BOTTOMMENU_ICON_POSITION": "above",
+  "BOTTOMMENU_VISIBLE_ON": "home,settings,profile"
+}
+🔥 7. Firebase Configuration
+Used in:
+
+Android-Paid ✅
+
+Android-Publish ✅
+
+Combined ✅
+
+iOS-only ✅ (for push/analytics)
+
+
+{
+  "firebase_config_android": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/google-services (gc).json",
+  "firebase_config_ios": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/GoogleService-Info-gc.plist"
+}
+🧪 8. Android Keystore Signing
+Used in: Android-Publish ✅, Combined ✅
+
+
+{
+  "KEY_STORE": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/keystore.jks",
+  "CM_KEYSTORE_PASSWORD": "opeN@1234",
+  "CM_KEY_ALIAS": "my_key_alias",
+  "CM_KEY_PASSWORD": "opeN@1234"
+}
+🍏 9. iOS Signing & Distribution
+Used in: iOS-only ✅, Combined ✅
+Note: .p12 is generated inside main.sh from .cer + .key using openssl
+
+
+{
+  "CERT_CER_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/apple_distribution.cer",
+  "CERT_KEY_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/privatekey.key",
+  "CERT_PASSWORD": "User@54321",
+  "PROFILE_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/Garbcode_App_Store.mobileprovision"
+}
+🔑 10. Apple Push Notification & App Store Keys
+Used in: iOS-only ✅, Combined ✅
+Required for push, signing, and App Store Connect APIs
+
+json
+Copy
+Edit
+{
+  "APPLE_TEAM_ID": "9H2AD7NQ49",
+  "APNS_KEY_ID": "V566SWNF69",
+  "APNS_AUTH_KEY_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_V566SWNF69.p8",
+  "APP_STORE_CONNECT_KEY_IDENTIFIER": "F5229W2Q8S"
+}
+Summary Table
+Block	Used In Workflows
+App Metadata & Versioning	All (1–5)
+Package/Bundles	All (1–5)
+Feature Flags & Permissions	All (1–5)
+Splash & UI Configs	All (1–5)
+Bottom Navigation	When IS_BOTTOMMENU is true
+Firebase	Android-Paid, Android-Publish, Combined, iOS
+Android Signing	Android-Publish, Combined
+iOS Signing	iOS-only, Combined
+Apple Push/Auth	iOS-only, Combined
+
+
+✅ QUICKAPP BUILD RULESET
+🔧 1. App Metadata & Versioning
+Variable	Required	Used In Workflows	Description
+VERSION_NAME	✅	All (1–5)	App version string
+VERSION_CODE	✅	All (1–5)	App version code (integer for Android)
+APP_NAME	✅	All (1–5)	Display name of the app
+ORG_NAME	✅	All (1–5)	Company or brand name
+WEB_URL	✅	All (1–5)	Official website link
+EMAIL_ID	✅	All (1–5)	Support or contact email
+
+📦 2. App Identifiers
+Variable	Required	Used In Workflows	Description
+PKG_NAME	✅	Android (1–3, 5)	Android package name (e.g., com.example)
+BUNDLE_ID	✅	iOS (4, 5)	iOS bundle identifier
+
+🚀 3. Feature Toggles (App Config)
+Variable	Required	Used In Workflows	Description
+PUSH_NOTIFY	⚠️	All (1–5)	Enable push notifications
+IS_CHATBOT	⚠️	All (1–5)	Enable chatbot feature
+IS_DEEPLINK	⚠️	All (1–5)	Enable deep linking
+IS_SPLASH	⚠️	All (1–5)	Enable splash screen
+IS_PULLDOWN	⚠️	All (1–5)	Enable pull-to-refresh
+IS_BOTTOMMENU	⚠️	All (1–5)	Enable bottom navigation menu
+IS_LOAD_IND	⚠️	All (1–5)	Enable loading indicator
+
+📲 4. Runtime Permissions
+Variable	Required	Used In Workflows	Description
+IS_CAMERA	⚠️	All (1–5)	Request camera access
+IS_LOCATION	⚠️	All (1–5)	Request location access
+IS_MIC	⚠️	All (1–5)	Request microphone access
+IS_NOTIFICATION	⚠️	All (1–5)	Request notification permission
+IS_CONTACT	⚠️	All (1–5)	Request contacts access
+IS_BIOMETRIC	⚠️	All (1–5)	Request biometric authentication
+IS_CALENDAR	⚠️	All (1–5)	Request calendar access
+IS_STORAGE	⚠️	All (1–5)	Request external storage access
+
+🎨 5. Splash Screen Settings
+Variable	Required	Used In Workflows	Description
+SPLASH	✅	All (1–5)	Splash logo image URL
+SPLASH_BG	⚠️	All (1–5)	Background image (optional)
+SPLASH_BG_COLOR	⚠️	All (1–5)	Hex background color
+SPLASH_TAGLINE	⚠️	All (1–5)	Splash screen tagline
+SPLASH_TAGLINE_COLOR	⚠️	All (1–5)	Tagline text color
+SPLASH_ANIMATION	⚠️	All (1–5)	Animation style (zoom/fade/slide)
+SPLASH_DURATION	⚠️	All (1–5)	Duration in seconds
+
+🧭 6. Bottom Menu Configuration
+Variable	Required if IS_BOTTOMMENU=true	Used In Workflows	Description
+BOTTOMMENU_ITEMS	✅	All (1–5)	JSON array of menu items
+BOTTOMMENU_BG_COLOR	⚠️	All (1–5)	Background color
+BOTTOMMENU_ICON_COLOR	⚠️	All (1–5)	Icon color
+BOTTOMMENU_TEXT_COLOR	⚠️	All (1–5)	Label text color
+BOTTOMMENU_FONT	⚠️	All (1–5)	Font family
+BOTTOMMENU_FONT_SIZE	⚠️	All (1–5)	Font size in sp
+BOTTOMMENU_FONT_BOLD	⚠️	All (1–5)	Bold (true/false)
+BOTTOMMENU_FONT_ITALIC	⚠️	All (1–5)	Italic (true/false)
+BOTTOMMENU_ACTIVE_TAB_COLOR	⚠️	All (1–5)	Active icon/text color
+BOTTOMMENU_ICON_POSITION	⚠️	All (1–5)	"above" or "side"
+BOTTOMMENU_VISIBLE_ON	⚠️	All (1–5)	Screens where visible
+
+🔥 7. Firebase Configuration
+Variable	Required	Used In Workflows	Description
+firebase_config_android	✅	Android-Paid, Android-Publish, 5	Firebase JSON for Android
+firebase_config_ios	✅	iOS, Combined (4, 5)	Firebase PLIST for iOS
+
+🔐 8. Android Keystore (for signing)
+Variable	Required	Used In Workflows	Description
+KEY_STORE	✅	Android-Publish, 5	JKS file URL
+CM_KEYSTORE_PASSWORD	✅	Android-Publish, 5	Password for keystore
+CM_KEY_ALIAS	✅	Android-Publish, 5	Key alias inside keystore
+CM_KEY_PASSWORD	✅	Android-Publish, 5	Password for the key alias
+
+🍏 9. iOS Signing
+Variable	Required	Used In Workflows	Description
+CERT_CER_URL	✅	iOS-only, 5	Apple Distribution Certificate (.cer)
+CERT_KEY_URL	✅	iOS-only, 5	Private Key (.key)
+CERT_PASSWORD	✅	iOS-only, 5	Password to export .p12
+PROFILE_URL	✅	iOS-only, 5	Mobile provisioning profile
+
+🧾 10. Apple Push & StoreConnect Keys
+Variable	Required	Used In Workflows	Description
+APPLE_TEAM_ID	✅	iOS-only, 5	Apple Developer Team ID
+APNS_KEY_ID	✅	iOS-only, 5	APNs Auth Key ID
+APNS_AUTH_KEY_URL	✅	iOS-only, 5	APNs Auth Key (.p8) file URL
+APP_STORE_CONNECT_KEY_IDENTIFIER	✅	iOS-only, 5	App Store Connect API Key ID
+
+📋 Notes & Enforcement Recommendations
+✅ Required fields must be validated during pipeline start — throw error if missing.
+
+⚠️ Optional fields should fall back to safe defaults or be skipped.
+
+🔀 Workflow detection must be based on Codemagic environment variable or passed tag (e.g., BUILD_WORKFLOW=android-paid)
+
+💡 If IS_BOTTOMMENU=false, ignore all bottom menu fields.
+

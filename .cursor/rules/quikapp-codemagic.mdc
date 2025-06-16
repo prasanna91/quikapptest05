@@ -1,0 +1,146 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ Codemagic Multi-Platform Build Automation Prompt (for All 5 Workflows)
+This build configuration supports five distinct mobile app workflows via Codemagic CI/CD using a shared variable injection approach, dynamic logic routing, and environment-sensitive scripting. The workflows are:
+
+🧩 Workflow Definitions
+1. Android-Free
+Entrypoint: lib/scripts/android/main.sh
+
+Firebase: ❌ Disabled
+
+Keystore: ❌ Not used
+
+Output: output/android/*.apk
+
+2. Android-Paid
+Entrypoint: lib/scripts/android/main.sh
+
+Firebase: ✅ Enabled (uses firebase_config_android)
+
+Keystore: ❌ Not used
+
+Output: output/android/*.apk
+
+3. Android-Publish
+Entrypoint: lib/scripts/android/main.sh
+
+Firebase: ✅ Enabled
+
+Keystore: ✅ Enabled (uses KEY_STORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD)
+
+Output: output/android/*.apk, output/android/*.aab
+
+4. iOS-Only (Signed IPA)
+Entrypoint: lib/scripts/ios/main.sh
+
+Inputs Required:
+
+CERT_CER_URL, CERT_KEY_URL (.cer and .key) → Converted to .p12 dynamically using openssl
+
+PROFILE_URL (.mobileprovision)
+
+CERT_PASSWORD
+
+Output: output/ios/*.ipa
+
+5. Combined Android & iOS
+Entrypoint: lib/scripts/combined/main.sh
+
+Executes Android logic → then iOS logic using conditional flags and dynamic variables
+
+Supports All Android + iOS Inputs Above
+
+Output: Both output/android/*.apk/.aab and output/ios/*.ipa
+
+📦 Environment Variables (Unified Format for All Workflows)
+
+{
+  "VERSION_NAME": "1.0.22",
+  "VERSION_CODE": "27",
+  "APP_NAME": "Garbcode App",
+  "ORG_NAME": "Garbcode Apparels Private Limited",
+  "WEB_URL": "https://garbcode.com/",
+  "PKG_NAME": "com.garbcode.garbcodeapp",
+  "BUNDLE_ID": "com.garbcode.garbcodeapp",
+  "EMAIL_ID": "prasannasrinivasan32@gmail.com",
+  "PUSH_NOTIFY": "true",
+  "IS_CHATBOT": "true",
+  "IS_DEEPLINK": "true",
+  "IS_SPLASH": "true",
+  "IS_PULLDOWN": "true",
+  "IS_BOTTOMMENU": "false",
+  "IS_LOAD_IND": "true",
+
+  "IS_CAMERA": "false",
+  "IS_LOCATION": "false",
+  "IS_MIC": "true",
+  "IS_NOTIFICATION": "true",
+  "IS_CONTACT": "false",
+  "IS_BIOMETRIC": "false",
+  "IS_CALENDAR": "false",
+  "IS_STORAGE": "true",
+
+  "LOGO_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png",
+  "SPLASH": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png",
+  "SPLASH_BG": "",
+  "SPLASH_BG_COLOR": "#cbdbf5",
+  "SPLASH_TAGLINE": "Welcome to Garbcode",
+  "SPLASH_TAGLINE_COLOR": "#a30237",
+  "SPLASH_ANIMATION": "zoom",
+  "SPLASH_DURATION": "4",
+
+  "BOTTOMMENU_ITEMS": "[{\"label\": \"Home\", \"icon\": \"home\", \"url\": \"https://pixaware.co/\"}, {\"label\": \"services\", \"icon\": \"services\", \"url\": \"https://pixaware.co/solutions/\"}, {\"label\": \"About\", \"icon\": \"info\", \"url\": \"https://pixaware.co/who-we-are/\"}, {\"label\": \"Contact\", \"icon\": \"phone\", \"url\": \"https://pixaware.co/lets-talk/\"}]",
+  "BOTTOMMENU_BG_COLOR": "#FFFFFF",
+  "BOTTOMMENU_ICON_COLOR": "#6d6e8c",
+  "BOTTOMMENU_TEXT_COLOR": "#6d6e8c",
+  "BOTTOMMENU_FONT": "DM Sans",
+  "BOTTOMMENU_FONT_SIZE": "12",
+  "BOTTOMMENU_FONT_BOLD": "false",
+  "BOTTOMMENU_FONT_ITALIC": "false",
+  "BOTTOMMENU_ACTIVE_TAB_COLOR": "#a30237",
+  "BOTTOMMENU_ICON_POSITION": "above",
+  "BOTTOMMENU_VISIBLE_ON": "home,settings,profile",
+
+  "firebase_config_android": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/google-services (gc).json",
+  "firebase_config_ios": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/GoogleService-Info-gc.plist",
+
+  "APPLE_TEAM_ID": "9H2AD7NQ49",
+  "APNS_KEY_ID": "V566SWNF69",
+  "APNS_AUTH_KEY_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_V566SWNF69.p8",
+
+  "CERT_PASSWORD": "User@54321",
+  "PROFILE_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/Garbcode_App_Store.mobileprovision",
+  "CERT_CER_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/apple_distribution.cer",
+  "CERT_KEY_URL": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/privatekey.key",
+  "APP_STORE_CONNECT_KEY_IDENTIFIER": "F5229W2Q8S",
+
+  "KEY_STORE": "https://raw.githubusercontent.com/prasanna91/QuikApp/main/keystore.jks",
+  "CM_KEYSTORE_PASSWORD": "opeN@1234",
+  "CM_KEY_ALIAS": "my_key_alias",
+  "CM_KEY_PASSWORD": "opeN@1234"
+}
+⚙️ Workflow Routing Logic (Inside Scripts)
+Each script (main.sh) uses conditional logic to:
+
+Detect workflow type via flags or env vars (e.g. IS_IOS_ONLY, USE_KEYSTORE, ENABLE_FIREBASE)
+
+Download assets using curl or wget
+
+Inject variables into Android Manifest, iOS plist, or environment files
+
+Trigger builds (e.g., Gradle for Android, Xcode for iOS)
+
+Sign apps (Keystore for Android, .p12 for iOS)
+
+🧪 Validation Checklist
+✅ All workflows tested in Codemagic
+✅ All assets (JSON, .cer, .key, .plist, .mobileprovision) hosted on GitHub
+✅ .p12 file is generated on the fly from provided .cer/.key
+✅ Custom permissions and UI settings injected using variables
+✅ Compatible with both APK-only and AAB builds
+✅ Supports Firebase on both platforms
+✅ Dynamic variable routing via env or --env Codemagic flags

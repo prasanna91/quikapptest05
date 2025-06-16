@@ -1,0 +1,60 @@
+workflows:
+  android-free:
+    name: Android-Free
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/android/main.sh
+    artifacts:
+      - output/android/*.apk
+    # notification: see email script
+
+  android-paid:
+    name: Android-Paid
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/android/main.sh
+    artifacts:
+      - output/android/*.apk
+
+  android-publish:
+    name: Android-Publish
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/android/main.sh
+    artifacts:
+      - output/android/*.apk
+      - output/android/*.aab
+
+  ios-only:
+    name: iOS-Only
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/ios/main.sh
+    artifacts:
+      - output/ios/*.ipa
+
+  combined:
+    name: Combined Android & iOS
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/combined/main.sh
+    artifacts:
+      - output/android/*.apk
+      - output/android/*.aab
+      - output/ios/*.ipa
+
+  local:
+    name: Local Test (QuikApp Vars)
+    environment:
+      scripts:
+        - source ./env.sh
+        - bash lib/scripts/android/main.sh
+    artifacts:
+      - output/android/*.apk
+# All variables should be loaded dynamically in scripts (see quikapp-codemagic)
+# Use env.sh to manage all environment variables for all workflows
