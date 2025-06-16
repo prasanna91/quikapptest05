@@ -65,10 +65,25 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-      - name: Force Flutter Downgrade
+      - name: Switch Flutter Version
         script: |
-          echo "Attempting to force downgrade Flutter to 3.8.1..."
-          flutter downgrade 3.8.1 --force || true
+          echo "Attempting to switch Flutter to version 3.8.1..."
+          # Try git-based version switch first
+          if git -C "$(dirname "$(which flutter)")" rev-parse --is-inside-work-tree &>/dev/null; then
+            echo "Flutter is git-based, attempting to switch version..."
+            git -C "$(dirname "$(which flutter)")" checkout 3.8.1 || true
+          fi
+
+          # Try direct download if git switch failed or not available
+          if ! flutter --version | grep -q "Flutter 3.8.1"; then
+            echo "Downloading Flutter 3.8.1..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
+            unzip -o flutter.zip -d "$HOME"
+            rm flutter.zip
+            export PATH="$HOME/flutter/bin:$PATH"
+          fi
+
+          echo "Current Flutter version:"
           flutter --version
       - name: Install FVM
         script: |
@@ -145,10 +160,25 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-      - name: Force Flutter Downgrade
+      - name: Switch Flutter Version
         script: |
-          echo "Attempting to force downgrade Flutter to 3.8.1..."
-          flutter downgrade 3.8.1 --force || true
+          echo "Attempting to switch Flutter to version 3.8.1..."
+          # Try git-based version switch first
+          if git -C "$(dirname "$(which flutter)")" rev-parse --is-inside-work-tree &>/dev/null; then
+            echo "Flutter is git-based, attempting to switch version..."
+            git -C "$(dirname "$(which flutter)")" checkout 3.8.1 || true
+          fi
+
+          # Try direct download if git switch failed or not available
+          if ! flutter --version | grep -q "Flutter 3.8.1"; then
+            echo "Downloading Flutter 3.8.1..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
+            unzip -o flutter.zip -d "$HOME"
+            rm flutter.zip
+            export PATH="$HOME/flutter/bin:$PATH"
+          fi
+
+          echo "Current Flutter version:"
           flutter --version
       - name: Install FVM
         script: |
@@ -224,10 +254,25 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-      - name: Force Flutter Downgrade
+      - name: Switch Flutter Version
         script: |
-          echo "Attempting to force downgrade Flutter to 3.8.1..."
-          flutter downgrade 3.8.1 --force || true
+          echo "Attempting to switch Flutter to version 3.8.1..."
+          # Try git-based version switch first
+          if git -C "$(dirname "$(which flutter)")" rev-parse --is-inside-work-tree &>/dev/null; then
+            echo "Flutter is git-based, attempting to switch version..."
+            git -C "$(dirname "$(which flutter)")" checkout 3.8.1 || true
+          fi
+
+          # Try direct download if git switch failed or not available
+          if ! flutter --version | grep -q "Flutter 3.8.1"; then
+            echo "Downloading Flutter 3.8.1..."
+            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
+            unzip -o flutter.zip -d "$HOME"
+            rm flutter.zip
+            export PATH="$HOME/flutter/bin:$PATH"
+          fi
+
+          echo "Current Flutter version:"
           flutter --version
       - name: Install FVM
         script: |
