@@ -68,20 +68,34 @@ workflows:
       - name: Switch Flutter Version
         script: |
           echo "Attempting to switch Flutter to version 3.8.1..."
-          # Try downgrade first
-          flutter downgrade 3.8.1 || true
 
-          # If downgrade failed, try direct download
-          if ! flutter --version | grep -q "Flutter 3.8.1"; then
-            echo "Downgrade failed, downloading Flutter 3.8.1 directly..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
-            unzip -o flutter.zip -d "$HOME"
-            rm flutter.zip
-            export PATH="$HOME/flutter/bin:$PATH"
-          fi
+          # Remove existing Flutter installation
+          rm -rf "$HOME/flutter"
 
+          # Download Flutter 3.8.1
+          echo "Downloading Flutter 3.8.1..."
+          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+
+          # Extract Flutter
+          echo "Extracting Flutter..."
+          unzip -o flutter.zip -d "$HOME"
+          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          rm flutter.zip
+
+          # Update PATH
+          export PATH="$HOME/flutter/bin:$PATH"
+
+          # Run Flutter doctor
+          echo "Running Flutter doctor..."
+          flutter doctor -v
+
+          # Verify version
           echo "Current Flutter version:"
           flutter --version
+
+          # Accept Android licenses
+          echo "Accepting Android licenses..."
+          yes | flutter doctor --android-licenses
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -160,20 +174,34 @@ workflows:
       - name: Switch Flutter Version
         script: |
           echo "Attempting to switch Flutter to version 3.8.1..."
-          # Try downgrade first
-          flutter downgrade 3.8.1 || true
 
-          # If downgrade failed, try direct download
-          if ! flutter --version | grep -q "Flutter 3.8.1"; then
-            echo "Downgrade failed, downloading Flutter 3.8.1 directly..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
-            unzip -o flutter.zip -d "$HOME"
-            rm flutter.zip
-            export PATH="$HOME/flutter/bin:$PATH"
-          fi
+          # Remove existing Flutter installation
+          rm -rf "$HOME/flutter"
 
+          # Download Flutter 3.8.1
+          echo "Downloading Flutter 3.8.1..."
+          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+
+          # Extract Flutter
+          echo "Extracting Flutter..."
+          unzip -o flutter.zip -d "$HOME"
+          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          rm flutter.zip
+
+          # Update PATH
+          export PATH="$HOME/flutter/bin:$PATH"
+
+          # Run Flutter doctor
+          echo "Running Flutter doctor..."
+          flutter doctor -v
+
+          # Verify version
           echo "Current Flutter version:"
           flutter --version
+
+          # Accept Android licenses
+          echo "Accepting Android licenses..."
+          yes | flutter doctor --android-licenses
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -251,20 +279,34 @@ workflows:
       - name: Switch Flutter Version
         script: |
           echo "Attempting to switch Flutter to version 3.8.1..."
-          # Try downgrade first
-          flutter downgrade 3.8.1 || true
 
-          # If downgrade failed, try direct download
-          if ! flutter --version | grep -q "Flutter 3.8.1"; then
-            echo "Downgrade failed, downloading Flutter 3.8.1 directly..."
-            curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.8.1-stable.zip" -o flutter.zip
-            unzip -o flutter.zip -d "$HOME"
-            rm flutter.zip
-            export PATH="$HOME/flutter/bin:$PATH"
-          fi
+          # Remove existing Flutter installation
+          rm -rf "$HOME/flutter"
 
+          # Download Flutter 3.8.1
+          echo "Downloading Flutter 3.8.1..."
+          curl -L "https://github.com/flutter/flutter/archive/refs/tags/3.8.1.zip" -o flutter.zip
+
+          # Extract Flutter
+          echo "Extracting Flutter..."
+          unzip -o flutter.zip -d "$HOME"
+          mv "$HOME/flutter-3.8.1" "$HOME/flutter"
+          rm flutter.zip
+
+          # Update PATH
+          export PATH="$HOME/flutter/bin:$PATH"
+
+          # Run Flutter doctor
+          echo "Running Flutter doctor..."
+          flutter doctor -v
+
+          # Verify version
           echo "Current Flutter version:"
           flutter --version
+
+          # Accept Android licenses
+          echo "Accepting Android licenses..."
+          yes | flutter doctor --android-licenses
       - name: Install FVM
         script: |
           dart pub global activate fvm
