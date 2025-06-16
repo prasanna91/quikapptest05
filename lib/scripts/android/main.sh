@@ -150,6 +150,43 @@ log "=== End Environment Variables Debug ==="
 
 log "Starting Android build workflow..."
 
+# Function to send email notification
+send_notification() {
+  local status=$1
+  local message=$2
+  local logs_url=$3
+  
+  # Get build info from environment variables
+  local build_number=${BUILD_NUMBER:-"unknown"}
+  local build_id=${BUILD_ID:-"unknown"}
+  local project_name=${PROJECT_NAME:-"Flutter Project"}
+  
+  # Format email subject
+  local subject="[${status}] ${project_name} Build #${build_number}"
+  
+  # Format email body
+  local body="
+Build Status: ${status}
+Project: ${project_name}
+Build Number: ${build_number}
+Build ID: ${build_id}
+
+${message}
+
+View build logs: ${logs_url}
+"
+  
+  # Send email using mail command if available
+  if command -v mail &> /dev/null; then
+    echo "${body}" | mail -s "${subject}" "${NOTIFICATION_EMAIL:-}"
+  else
+    log "[WARN] mail command not available. Skipping email notification."
+    log "Would have sent:"
+    log "Subject: ${subject}"
+    log "Body: ${body}"
+  fi
+}
+
 # Function to validate Flutter environment
 validate_flutter_env() {
   log "Validating Flutter environment..."
@@ -157,6 +194,7 @@ validate_flutter_env() {
   # Check Flutter installation
   if ! command -v flutter &> /dev/null; then
     log "[ERROR] Flutter is not installed or not in PATH"
+    send_notification "FAILED" "Flutter is not installed or not in PATH" "${BUILD_URL:-}"
     exit 1
   fi
 
@@ -164,6 +202,7 @@ validate_flutter_env() {
   log "Running Flutter doctor..."
   if ! flutter doctor -v; then
     log "[ERROR] Flutter doctor reported issues. Please fix them before proceeding."
+    send_notification "FAILED" "Flutter doctor reported issues" "${BUILD_URL:-}"
     exit 1
   fi
 
@@ -172,6 +211,7 @@ validate_flutter_env() {
     log "[WARN] Android licenses not accepted. Attempting to accept..."
     yes | flutter doctor --android-licenses || {
       log "[ERROR] Failed to accept Android licenses"
+      send_notification "FAILED" "Failed to accept Android licenses" "${BUILD_URL:-}"
       exit 1
     }
   fi
@@ -205,13 +245,24 @@ check_flutter_version() {
       if [ "$CURRENT_FLUTTER_VERSION" != "$REQUIRED_FLUTTER_VERSION" ]; then
         log "Flutter version mismatch. Attempting to switch to version $REQUIRED_FLUTTER_VERSION..."
         
-        # Try to switch Flutter version
-        if flutter version $REQUIRED_FLUTTER_VERSION; then
-          log "Successfully switched to Flutter version $REQUIRED_FLUTTER_VERSION"
+        # Try to switch Flutter version using git
+        if git -C "$(dirname "$(which flutter)")" rev-parse --is-inside-work-tree &>/dev/null; then
+          log "Flutter is git-based, attempting to switch version..."
+          if git -C "$(dirname "$(which flutter)")" checkout "$REQUIRED_FLUTTER_VERSION" && \
+             flutter --version | grep -q "Flutter $REQUIRED_FLUTTER_VERSION"; then
+            log "Successfully switched to Flutter version $REQUIRED_FLUTTER_VERSION"
+          else
+            log "[ERROR] Failed to switch Flutter version via git"
+            send_notification "FAILED" "Failed to switch Flutter version to $REQUIRED_FLUTTER_VERSION" "${BUILD_URL:-}"
+            exit 1
+          fi
         else
-          log "[ERROR] Failed to switch Flutter version. Please ensure Flutter version $REQUIRED_FLUTTER_VERSION is installed."
+          log "[ERROR] Flutter installation is not git-based. Please install Flutter version $REQUIRED_FLUTTER_VERSION manually."
+          send_notification "FAILED" "Flutter installation is not git-based. Please install version $REQUIRED_FLUTTER_VERSION manually." "${BUILD_URL:-}"
           exit 1
         fi
+      else
+        log "Flutter version matches requirements"
       fi
       
       # Check Dart version
@@ -224,6 +275,7 @@ check_flutter_version() {
     fi
   else
     log "[ERROR] pubspec.yaml not found"
+    send_notification "FAILED" "pubspec.yaml not found" "${BUILD_URL:-}"
     exit 1
   fi
 }
@@ -236,6 +288,7 @@ prepare_flutter_project() {
   log "Cleaning Flutter project..."
   flutter clean || {
     log "[ERROR] Failed to clean Flutter project"
+    send_notification "FAILED" "Failed to clean Flutter project" "${BUILD_URL:-}"
     exit 1
   }
   
@@ -255,12 +308,14 @@ prepare_flutter_project() {
   log "Getting Flutter dependencies..."
   flutter pub get || {
     log "[ERROR] Failed to get Flutter dependencies"
+    send_notification "FAILED" "Failed to get Flutter dependencies" "${BUILD_URL:-}"
     exit 1
   }
   
   # Verify pub get was successful
   if [ ! -f ".packages" ]; then
     log "[ERROR] .packages file not found after flutter pub get"
+    send_notification "FAILED" ".packages file not found after flutter pub get" "${BUILD_URL:-}"
     exit 1
   fi
 }
@@ -278,6 +333,7 @@ check_flutter_version
 prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
+send_notification "SUCCESS" "Flutter environment setup completed successfully" "${BUILD_URL:-}"
 
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow

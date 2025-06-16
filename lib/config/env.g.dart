@@ -32,7 +32,7 @@ class Env {
   static const String exportSPLASH_TAGLINE_COLOR = "#333333";
   static const String exportSPLASH_ANIMATION = "none";
   static const String exportSPLASH_DURATION = "2";
-  static const String exportBOTTOMMENU_ITEMS = "'[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'";
+  static const String exportBOTTOMMENU_ITEMS = """"'[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'""";
   static const String exportBOTTOMMENU_BG_COLOR = "#FFFFFF";
   static const String exportBOTTOMMENU_ICON_COLOR = "#888888";
   static const String exportBOTTOMMENU_TEXT_COLOR = "#888888";
@@ -56,5 +56,5 @@ class Env {
   static const String exportKEY_STORE = "https://example.com/keystore.jks";
   static const String exportCM_KEYSTORE_PASSWORD = "testpassword";
   static const String exportCM_KEY_ALIAS = "testalias";
-  static const String exportCM_KEY_PASSWORD = "testpassword" ";
+  static const String exportCM_KEY_PASSWORD = "testpassword";
 }

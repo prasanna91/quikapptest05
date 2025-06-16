@@ -2,7 +2,7 @@ workflows:
   android-free:
     name: Android-Free
     environment:
-      flutter: 3.22.1
+      flutter: 3.8.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -60,7 +60,14 @@ workflows:
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
+        NOTIFICATION_EMAIL: "${EMAIL_ID}"
+        PROJECT_NAME: "${APP_NAME}"
+        BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Install FVM
+        script: |
+            dart pub global activate fvm
+            export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
@@ -69,7 +76,7 @@ workflows:
   android-paid:
     name: Android-Paid
     environment:
-      flutter: 3.22.1
+      flutter: 3.8.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -127,7 +134,14 @@ workflows:
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
+        NOTIFICATION_EMAIL: "${EMAIL_ID}"
+        PROJECT_NAME: "${APP_NAME}"
+        BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Install FVM
+        script: |
+            dart pub global activate fvm
+            export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
@@ -135,7 +149,7 @@ workflows:
   android-publish:
     name: Android-Publish
     environment:
-      flutter: 3.22.1
+      flutter: 3.8.1
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -193,7 +207,14 @@ workflows:
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
+        NOTIFICATION_EMAIL: "${EMAIL_ID}"
+        PROJECT_NAME: "${APP_NAME}"
+        BUILD_URL: $CM_BUILD_URL
     scripts:
+      - name: Install FVM
+        script: |
+            dart pub global activate fvm
+            export PATH="$PATH":"$HOME/.pub-cache/bin"
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
