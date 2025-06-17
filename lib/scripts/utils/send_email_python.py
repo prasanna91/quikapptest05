@@ -24,7 +24,8 @@ def send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_e
 
     context = ssl.create_default_context()
     try:
-        with smtplib.SMTP_SSL(smtp_server, int(smtp_port), context=context) as server:
+        with smtplib.SMTP(smtp_server, int(smtp_port)) as server:
+            server.starttls(context=context)
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, message.as_string())
         print("Email sent successfully!")
