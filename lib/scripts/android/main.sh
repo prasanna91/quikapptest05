@@ -29,6 +29,10 @@ else
   exit 1
 fi
 
+# Update pubspec.yaml with environment variables
+log "Updating pubspec.yaml with environment variables..."
+"$UTILS_DIR/update_pubspec.sh"
+
 # Trap for errors to send failure notification
 trap 'send_email_notification "failure" "Android build failed at line $LINENO." "$BUILD_LOG_FILE"' ERR
 

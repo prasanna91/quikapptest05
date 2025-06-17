@@ -8,254 +8,125 @@ else
     export flutterRoot=""
 fi
 
-# API Variables with defaults
-VERSION_NAME=${VERSION_NAME:-"1.0.0"}
-VERSION_CODE=${VERSION_CODE:-"1"}
-APP_NAME=${APP_NAME:-"QuikApp"}
-ORG_NAME=${ORG_NAME:-"QuikApp"}
-WEB_URL=${WEB_URL:-"https://quikapp.co"}
-PKG_NAME=${PKG_NAME:-"com.quikapp.app"}
-BUNDLE_ID=${BUNDLE_ID:-"com.quikapp.app"}
-EMAIL_ID=${EMAIL_ID:-"admin@quikapp.co"}
-PUSH_NOTIFY=${PUSH_NOTIFY:-"false"}
-IS_CHATBOT=${IS_CHATBOT:-"false"}
-IS_DEEPLINK=${IS_DEEPLINK:-"false"}
-IS_SPLASH=${IS_SPLASH:-"false"}
-IS_PULLDOWN=${IS_PULLDOWN:-"false"}
-IS_BOTTOMMENU=${IS_BOTTOMMENU:-"false"}
-IS_LOAD_IND=${IS_LOAD_IND:-"false"}
-IS_CAMERA=${IS_CAMERA:-"false"}
-IS_LOCATION=${IS_LOCATION:-"false"}
-IS_MIC=${IS_MIC:-"false"}
-IS_NOTIFICATION=${IS_NOTIFICATION:-"false"}
-IS_CONTACT=${IS_CONTACT:-"false"}
-IS_BIOMETRIC=${IS_BIOMETRIC:-"false"}
-IS_CALENDAR=${IS_CALENDAR:-"false"}
-IS_STORAGE=${IS_STORAGE:-"false"}
-LOGO_URL=${LOGO_URL:-""}
-SPLASH_URL=${SPLASH_URL:-""}
-SPLASH_BG=${SPLASH_BG:-""}
-SPLASH_BG_COLOR=${SPLASH_BG_COLOR:-"#FFFFFF"}
-SPLASH_TAGLINE=${SPLASH_TAGLINE:-""}
-SPLASH_TAGLINE_COLOR=${SPLASH_TAGLINE_COLOR:-"#000000"}
-SPLASH_ANIMATION=${SPLASH_ANIMATION:-"fade"}
-SPLASH_DURATION=${SPLASH_DURATION:-"3"}
-BOTTOMMENU_ITEMS=${BOTTOMMENU_ITEMS:-"[]"}
-BOTTOMMENU_BG_COLOR=${BOTTOMMENU_BG_COLOR:-"#FFFFFF"}
-BOTTOMMENU_ICON_COLOR=${BOTTOMMENU_ICON_COLOR:-"#000000"}
-BOTTOMMENU_TEXT_COLOR=${BOTTOMMENU_TEXT_COLOR:-"#000000"}
-BOTTOMMENU_FONT=${BOTTOMMENU_FONT:-"Roboto"}
-BOTTOMMENU_FONT_SIZE=${BOTTOMMENU_FONT_SIZE:-"12"}
-BOTTOMMENU_FONT_BOLD=${BOTTOMMENU_FONT_BOLD:-"false"}
-BOTTOMMENU_FONT_ITALIC=${BOTTOMMENU_FONT_ITALIC:-"false"}
-BOTTOMMENU_ACTIVE_TAB_COLOR=${BOTTOMMENU_ACTIVE_TAB_COLOR:-"#0000FF"}
-BOTTOMMENU_ICON_POSITION=${BOTTOMMENU_ICON_POSITION:-"above"}
-BOTTOMMENU_VISIBLE_ON=${BOTTOMMENU_VISIBLE_ON:-"all"}
+# Default environment variables
+export VERSION_NAME=${VERSION_NAME:-"1.0.0"}
+export VERSION_CODE=${VERSION_CODE:-"1"}
+export APP_NAME=${APP_NAME:-"QuikApp"}
+export PKG_NAME=${PKG_NAME:-"com.quikapp.app"}
+export BUNDLE_ID=${BUNDLE_ID:-"com.quikapp.app"}
+export ORG_NAME=${ORG_NAME:-"QuikApp"}
+export WEB_URL=${WEB_URL:-"https://quikapp.co"}
+export EMAIL_ID=${EMAIL_ID:-"support@quikapp.co"}
 
-# Admin / Build Environment Variables (defaults)
-export CM_BUILD_DIR=${CM_BUILD_DIR:-""}
-export BUILD_MODE=${BUILD_MODE:-"release"}
-export FLUTTER_VERSION=${FLUTTER_VERSION:-"3.32.2"}
-export GRADLE_VERSION=${GRADLE_VERSION:-"8.0.0"}
-export JAVA_VERSION=${JAVA_VERSION:-"17"}
-export ANDROID_COMPILE_SDK=${ANDROID_COMPILE_SDK:-"34"}
-export ANDROID_MIN_SDK=${ANDROID_MIN_SDK:-"21"}
-export ANDROID_TARGET_SDK=${ANDROID_TARGET_SDK:-"34"}
-export ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
-export ANDROID_NDK_VERSION=${ANDROID_NDK_VERSION:-"27.0.12077973"}
-export ANDROID_CMDLINE_TOOLS=${ANDROID_CMDLINE_TOOLS:-"latest"}
+# Feature flags
+export PUSH_NOTIFY=${PUSH_NOTIFY:-"false"}
+export IS_CHATBOT=${IS_CHATBOT:-"false"}
+export IS_DEEPLINK=${IS_DEEPLINK:-"false"}
+export IS_SPLASH=${IS_SPLASH:-"false"}
+export IS_PULLDOWN=${IS_PULLDOWN:-"false"}
+export IS_BOTTOMMENU=${IS_BOTTOMMENU:-"false"}
+export IS_LOAD_IND=${IS_LOAD_IND:-"false"}
 
-# These paths are derived from PROJECT_ROOT, which is set in main.sh
+# Permissions
+export IS_CAMERA=${IS_CAMERA:-"false"}
+export IS_LOCATION=${IS_LOCATION:-"false"}
+export IS_MIC=${IS_MIC:-"false"}
+export IS_NOTIFICATION=${IS_NOTIFICATION:-"false"}
+export IS_CONTACT=${IS_CONTACT:-"false"}
+export IS_BIOMETRIC=${IS_BIOMETRIC:-"false"}
+export IS_CALENDAR=${IS_CALENDAR:-"false"}
+export IS_STORAGE=${IS_STORAGE:-"false"}
+
+# UI/Branding
+export LOGO_URL=${LOGO_URL:-""}
+export SPLASH_URL=${SPLASH_URL:-""}
+export SPLASH_BG=${SPLASH_BG:-""}
+export SPLASH_BG_COLOR=${SPLASH_BG_COLOR:-"#FFFFFF"}
+export SPLASH_TAGLINE=${SPLASH_TAGLINE:-""}
+export SPLASH_TAGLINE_COLOR=${SPLASH_TAGLINE_COLOR:-"#000000"}
+export SPLASH_ANIMATION=${SPLASH_ANIMATION:-"fade"}
+export SPLASH_DURATION=${SPLASH_DURATION:-"3"}
+
+# Bottom Menu
+export BOTTOMMENU_ITEMS=${BOTTOMMENU_ITEMS:-"[]"}
+export BOTTOMMENU_BG_COLOR=${BOTTOMMENU_BG_COLOR:-"#FFFFFF"}
+export BOTTOMMENU_ICON_COLOR=${BOTTOMMENU_ICON_COLOR:-"#000000"}
+export BOTTOMMENU_TEXT_COLOR=${BOTTOMMENU_TEXT_COLOR:-"#000000"}
+export BOTTOMMENU_FONT=${BOTTOMMENU_FONT:-"Roboto"}
+export BOTTOMMENU_FONT_SIZE=${BOTTOMMENU_FONT_SIZE:-"12"}
+export BOTTOMMENU_FONT_BOLD=${BOTTOMMENU_FONT_BOLD:-"false"}
+export BOTTOMMENU_FONT_ITALIC=${BOTTOMMENU_FONT_ITALIC:-"false"}
+export BOTTOMMENU_ACTIVE_TAB_COLOR=${BOTTOMMENU_ACTIVE_TAB_COLOR:-"#000000"}
+export BOTTOMMENU_ICON_POSITION=${BOTTOMMENU_ICON_POSITION:-"above"}
+export BOTTOMMENU_VISIBLE_ON=${BOTTOMMENU_VISIBLE_ON:-"all"}
+
+# Firebase
+export firebase_config_android=${firebase_config_android:-""}
+export firebase_config_ios=${firebase_config_ios:-""}
+
+# Android Keystore
+export KEY_STORE=${KEY_STORE:-""}
+export CM_KEYSTORE_PASSWORD=${CM_KEYSTORE_PASSWORD:-""}
+export CM_KEY_ALIAS=${CM_KEY_ALIAS:-""}
+export CM_KEY_PASSWORD=${CM_KEY_PASSWORD:-""}
+
+# iOS Signing
+export APPLE_TEAM_ID=${APPLE_TEAM_ID:-""}
+export APNS_KEY_ID=${APNS_KEY_ID:-""}
+export APNS_AUTH_KEY_URL=${APNS_AUTH_KEY_URL:-""}
+export CERT_PASSWORD=${CERT_PASSWORD:-""}
+export PROFILE_URL=${PROFILE_URL:-""}
+export CERT_CER_URL=${CERT_CER_URL:-""}
+export CERT_KEY_URL=${CERT_KEY_URL:-""}
+export APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER:-""}
+
+# SMTP Configuration
+export SMTP_SERVER=${SMTP_SERVER:-"smtp.gmail.com"}
+export SMTP_PORT=${SMTP_PORT:-"587"}
+export SMTP_USER=${SMTP_USER:-""}
+export SMTP_PASS=${SMTP_PASS:-""}
+
+# Project paths
 export PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../.." && pwd )"
 export ANDROID_ROOT="$PROJECT_ROOT/android"
 export ASSETS_DIR="$PROJECT_ROOT/assets"
 export OUTPUT_DIR="$PROJECT_ROOT/output"
 export TEMP_DIR="$PROJECT_ROOT/temp"
 
+# Android specific paths
 export ANDROID_MANIFEST_PATH="$ANDROID_ROOT/app/src/main/AndroidManifest.xml"
 export ANDROID_BUILD_GRADLE_PATH="$ANDROID_ROOT/app/build.gradle"
-export ANDROID_KEY_PROPERTIES_PATH="$ANDROID_ROOT/gradle.properties"
+export ANDROID_KEY_PROPERTIES_PATH="$ANDROID_ROOT/key.properties"
 export ANDROID_FIREBASE_CONFIG_PATH="$ANDROID_ROOT/app/google-services.json"
-export ANDROID_MIPMAP_DIR="$ANDROID_ROOT/app/src/main/res/mipmap-anydpi-v26"
-export ANDROID_DRAWABLE_DIR="$ANDROID_ROOT/app/src/main/res/drawable-v21"
+export ANDROID_MIPMAP_DIR="$ANDROID_ROOT/app/src/main/res/mipmap"
+export ANDROID_DRAWABLE_DIR="$ANDROID_ROOT/app/src/main/res/drawable"
 
+# Output paths
 export APK_OUTPUT_PATH="$OUTPUT_DIR/android"
 export AAB_OUTPUT_PATH="$OUTPUT_DIR/android"
 
-# Email Configuration
-export EMAIL_SMTP_SERVER="smtp.gmail.com"
-export EMAIL_SMTP_PORT="587"
-export EMAIL_SMTP_USER="${Notifi_E_ID:-prasannasrie@gmail.com}"
-export EMAIL_SMTP_PASS="jbbf nzhm zoay lbwb"
+# Create necessary directories
+mkdir -p "$OUTPUT_DIR/android"
+mkdir -p "$TEMP_DIR"
 
-# Firebase Configuration
-export firebase_config_android=${firebase_config_android:-""}
-export firebase_config_ios=${firebase_config_ios:-""}
-
-# Automatically determine settings based on variable presence
-if [ -n "${KEY_STORE:-}" ] && [ -n "${CM_KEYSTORE_PASSWORD:-}" ] && [ -n "${CM_KEY_ALIAS:-}" ] && [ -n "${CM_KEY_PASSWORD:-}" ]; then
-    USE_KEYSTORE="true"
-    BUILD_AAB="true"
-else
-    USE_KEYSTORE="false"
-    BUILD_AAB="false"
-fi
-
-# Function to send email notification
+# Function to send email notifications
 send_email_notification() {
-    local status=$1
-    local error_message=${2:-}
-    local log_file_path=${3:-}
-    local apk_path=${4:-}
-    local aab_path=${5:-}
-
-    local subject=""
-    local project_configurations
-    project_configurations="$(get_project_configurations)"
-
-    if [ "$status" = "started" ]; then
-        subject="[Build Started] ${APP_NAME} Build Notification"
-        body="
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
-                .content { padding: 20px; }
-                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-                .status-started { color: #007bff; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h2>${APP_NAME} Build Notification</h2>
-                    <p>Organization: ${ORG_NAME}</p>
-                </div>
-                <div class='content'>
-                    <h3 class='status-started'>Build Status: Started</h3>
-                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
-                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
-                    <h4>Project Configurations:</h4>
-                    <ul>
-                        ${project_configurations}
-                    </ul>
-                </div>
-                <div class='footer'>
-                    <p>This is an automated message from ${APP_NAME} Build System</p>
-                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        "
-    elif [ "$status" = "success" ]; then
-        subject="[Build Success] ${APP_NAME} Build Notification"
-        body="
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
-                .content { padding: 20px; }
-                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-                .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-                .status-success { color: #28a745; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h2>${APP_NAME} Build Notification</h2>
-                    <p>Organization: ${ORG_NAME}</p>
-                </div>
-                <div class='content'>
-                    <h3 class='status-success'>Build Status: Success</h3>
-                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
-                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
-                    <h4>Project Configurations:</h4>
-                    <ul>
-                        ${project_configurations}
-                    </ul>
-                    <div class='artifacts'>
-                        <h4>Build Artifacts:</h4>
-                        $( [ -n "${aab_path}" ] && echo "<p><a href='file://${aab_path}' class='artifact-link'>📦 Download AAB</a></p>" )
-                        $( [ -n "${apk_path}" ] && echo "<p><a href='file://${apk_path}' class='artifact-link'>📱 Download APK</a></p>" )
-                    </div>
-                </div>
-                <div class='footer'>
-                    <p>This is an automated message from ${APP_NAME} Build System</p>
-                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        "
-    elif [ "$status" = "failure" ]; then
-        subject="[Build Failed] ${APP_NAME} Build Notification"
-        body="
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
-                .content { padding: 20px; }
-                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-                .status-failure { color: #dc3545; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h2>${APP_NAME} Build Notification</h2>
-                    <p>Organization: ${ORG_NAME}</p>
-                </div>
-                <div class='content'>
-                    <h3 class='status-failure'>Build Status: Failed</h3>
-                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
-                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
-                    <h4>Project Configurations:</h4>
-                    <ul>
-                        ${project_configurations}
-                    </ul>
-                    $( [ -n "${error_message}" ] && echo "<h4>Error Details:</h4><pre>${error_message}</pre>" )
-                </div>
-                <div class='footer'>
-                    <p>This is an automated message from ${APP_NAME} Build System</p>
-                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        "
-    else
-        echo "Invalid status for email notification: $status"
-        return 1
+    local status="$1"
+    local message="$2"
+    local log_file="$3"
+    
+    if [ -z "$SMTP_USER" ] || [ -z "$SMTP_PASS" ]; then
+        echo "SMTP credentials not configured. Skipping email notification."
+        return
     fi
-
-    local email_file
-    email_file=$(mktemp)
-    echo "${body}" > "${email_file}"
     
-    # Call Python script to send email
-    python3 lib/scripts/utils/send_email_python.py \
-        "${EMAIL_SMTP_SERVER}" \
-        "${EMAIL_SMTP_PORT}" \
-        "${EMAIL_SMTP_USER}" \
-        "${EMAIL_SMTP_PASS}" \
-        "${EMAIL_SMTP_USER}" \
-        "${EMAIL_ID}" \
-        "${subject}" \
-        "${email_file}" \
-        "${log_file_path}" \
-        "${apk_path}" \
-        "${aab_path}"
+    local subject="QuikApp Build: $status"
+    local body="Build Status: $status\n\nMessage: $message\n\nLog file: $log_file"
     
-    # Clean up temporary file
-    rm "${email_file}" || true
+    echo -e "$body" | mail -s "$subject" -S "smtp=smtp://$SMTP_SERVER:$SMTP_PORT" \
+        -S "smtp-use-starttls" -S "smtp-auth=login" \
+        -S "smtp-auth-user=$SMTP_USER" -S "smtp-auth-password=$SMTP_PASS" \
+        "$EMAIL_ID"
 }
 
 # Function to get project configurations for email
