@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+# Detect Flutter root path
+if command -v flutter >/dev/null 2>&1; then
+    export flutterRoot="$(dirname "$(which flutter)")"
+else
+    export flutterRoot=""
+fi
+
 # API Variables with defaults
 VERSION_NAME=${VERSION_NAME:-"1.0.0"}
 VERSION_CODE=${VERSION_CODE:-"1"}
@@ -248,67 +255,89 @@ send_email_notification() {
         "${aab_path}"
     
     # Clean up temporary file
-    rm -f "${email_file}"
+    rm "${email_file}" || true
 }
 
-# Helper function to get project configurations as HTML list items
+# Function to get project configurations for email
 get_project_configurations() {
-    local configs=""
-    configs+="<li>App Name: ${APP_NAME}</li>"
-    configs+="<li>Version: ${VERSION_NAME} (${VERSION_CODE})</li>"
-    configs+="<li>Organization: ${ORG_NAME}</li>"
-    configs+="<li>Web URL: ${WEB_URL}</li>"
-    configs+="<li>Package Name: ${PKG_NAME}</li>"
-    configs+="<li>Bundle ID: ${BUNDLE_ID}</li>"
-    configs+="<li>Email ID: ${EMAIL_ID}</li>"
-    configs+="<li>Push Notifications: ${PUSH_NOTIFY}</li>"
-    configs+="<li>Chatbot Integration: ${IS_CHATBOT}</li>"
-    configs+="<li>Deeplinking: ${IS_DEEPLINK}</li>"
-    configs+="<li>Splash Screen: ${IS_SPLASH}</li>"
-    configs+="<li>Pull Down Refresh: ${IS_PULLDOWN}</li>"
-    configs+="<li>Bottom Menu: ${IS_BOTTOMMENU}</li>"
-    configs+="<li>Loading Indicators: ${IS_LOAD_IND}</li>"
-    configs+="<li>Camera Access: ${IS_CAMERA}</li>"
-    configs+="<li>Location Access: ${IS_LOCATION}</li>"
-    configs+="<li>Microphone Access: ${IS_MIC}</li>"
-    configs+="<li>Notification Access: ${IS_NOTIFICATION}</li>"
-    configs+="<li>Contact Access: ${IS_CONTACT}</li>"
-    configs+="<li>Biometric Authentication: ${IS_BIOMETRIC}</li>"
-    configs+="<li>Calendar Access: ${IS_CALENDAR}</li>"
-    configs+="<li>Storage Access: ${IS_STORAGE}</li>"
-    configs+="<li>Logo URL: ${LOGO_URL}</li>"
-    configs+="<li>Splash URL: ${SPLASH_URL}</li>"
-    configs+="<li>Keystore Used: ${USE_KEYSTORE}</li>"
-    
-    # Check for Firebase config file presence
-    if [ -f "${ANDROID_FIREBASE_CONFIG_PATH}" ]; then
-        configs+="<li>Firebase Integration: Yes</li>"
-    else
-        configs+="<li>Firebase Integration: No</li>"
-    fi
+    local configs=(
+        "APP_NAME:${APP_NAME}"
+        "ORG_NAME:${ORG_NAME}"
+        "WEB_URL:${WEB_URL}"
+        "VERSION_NAME:${VERSION_NAME}"
+        "VERSION_CODE:${VERSION_CODE}"
+        "PKG_NAME:${PKG_NAME}"
+        "BUNDLE_ID:${BUNDLE_ID}"
+        "EMAIL_ID:${EMAIL_ID}"
+        "PUSH_NOTIFY:${PUSH_NOTIFY}"
+        "IS_CHATBOT:${IS_CHATBOT}"
+        "IS_DEEPLINK:${IS_DEEPLINK}"
+        "IS_SPLASH:${IS_SPLASH}"
+        "IS_PULLDOWN:${IS_PULLDOWN}"
+        "IS_BOTTOMMENU:${IS_BOTTOMMENU}"
+        "IS_LOAD_IND:${IS_LOAD_IND}"
+        "IS_CAMERA:${IS_CAMERA}"
+        "IS_LOCATION:${IS_LOCATION}"
+        "IS_MIC:${IS_MIC}"
+        "IS_NOTIFICATION:${IS_NOTIFICATION}"
+        "IS_CONTACT:${IS_CONTACT}"
+        "IS_BIOMETRIC:${IS_BIOMETRIC}"
+        "IS_CALENDAR:${IS_CALENDAR}"
+        "IS_STORAGE:${IS_STORAGE}"
+        "LOGO_URL:${LOGO_URL}"
+        "SPLASH_URL:${SPLASH_URL}"
+        "SPLASH_BG:${SPLASH_BG}"
+        "SPLASH_BG_COLOR:${SPLASH_BG_COLOR}"
+        "SPLASH_TAGLINE:${SPLASH_TAGLINE}"
+        "SPLASH_TAGLINE_COLOR:${SPLASH_TAGLINE_COLOR}"
+        "SPLASH_ANIMATION:${SPLASH_ANIMATION}"
+        "SPLASH_DURATION:${SPLASH_DURATION}"
+        "BOTTOMMENU_ITEMS:${BOTTOMMENU_ITEMS}"
+        "BOTTOMMENU_BG_COLOR:${BOTTOMMENU_BG_COLOR}"
+        "BOTTOMMENU_ICON_COLOR:${BOTTOMMENU_ICON_COLOR}"
+        "BOTTOMMENU_TEXT_COLOR:${BOTTOMMENU_TEXT_COLOR}"
+        "BOTTOMMENU_FONT:${BOTTOMMENU_FONT}"
+        "BOTTOMMENU_FONT_SIZE:${BOTTOMMENU_FONT_SIZE}"
+        "BOTTOMMENU_FONT_BOLD:${BOTTOMMENU_FONT_BOLD}"
+        "BOTTOMMENU_FONT_ITALIC:${BOTTOMMENU_FONT_ITALIC}"
+        "BOTTOMMENU_ACTIVE_TAB_COLOR:${BOTTOMMENU_ACTIVE_TAB_COLOR}"
+        "BOTTOMMENU_ICON_POSITION:${BOTTOMMENU_ICON_POSITION}"
+        "BOTTOMMENU_VISIBLE_ON:${BOTTOMMENU_VISIBLE_ON}"
+        "firebase_config_android:${firebase_config_android}"
+        "firebase_config_ios:${firebase_config_ios}"
+        "KEY_STORE:${KEY_STORE}"
+        "CM_KEYSTORE_PASSWORD:${CM_KEYSTORE_PASSWORD}"
+        "CM_KEY_ALIAS:${CM_KEY_ALIAS}"
+        "CM_KEY_PASSWORD:${CM_KEY_PASSWORD}"
+        "EMAIL_SMTP_SERVER:${EMAIL_SMTP_SERVER}"
+        "EMAIL_SMTP_PORT:${EMAIL_SMTP_PORT}"
+        "EMAIL_SMTP_USER:${EMAIL_SMTP_USER}"
+        "EMAIL_SMTP_PASS:********"
+    )
 
-    echo "${configs}"
+    local config_list=""
+    for config in "${configs[@]}"; do
+        config_list+="<li>${config}</li>"
+    done
+    echo "$config_list"
 }
 
-# Generate environment.dart
+# Function to generate environment.dart
 generate_environment_dart() {
-    cat > lib/config/environment.dart << 'EOF'
-class Environment {
-  static const String versionName = '${VERSION_NAME}';
-  static const String versionCode = '${VERSION_CODE}';
+    cat > lib/config/env_config.dart << EOF
+class EnvConfig {
   static const String appName = '${APP_NAME}';
   static const String orgName = '${ORG_NAME}';
   static const String webUrl = '${WEB_URL}';
   static const String pkgName = '${PKG_NAME}';
   static const String bundleId = '${BUNDLE_ID}';
   static const String emailId = '${EMAIL_ID}';
-  static const bool pushNotify = ${PUSH_NOTIFY};
   static const bool isChatbot = ${IS_CHATBOT};
   static const bool isDeeplink = ${IS_DEEPLINK};
   static const bool isSplash = ${IS_SPLASH};
   static const bool isPulldown = ${IS_PULLDOWN};
-  static const bool isBottomMenu = ${IS_BOTTOMMENU};
-  static const bool isLoadInd = ${IS_LOAD_IND};
+  static const bool isBottommenu = ${IS_BOTTOMMENU};
+  static const bool isLoadIndicator = ${IS_LOAD_IND};
   static const bool isCamera = ${IS_CAMERA};
   static const bool isLocation = ${IS_LOCATION};
   static const bool isMic = ${IS_MIC};
@@ -324,49 +353,35 @@ class Environment {
   static const String splashTagline = '${SPLASH_TAGLINE}';
   static const String splashTaglineColor = '${SPLASH_TAGLINE_COLOR}';
   static const String splashAnimation = '${SPLASH_ANIMATION}';
-  static const String splashDuration = '${SPLASH_DURATION}';
-  static const String bottomMenuItems = '${BOTTOMMENU_ITEMS}';
-  static const String bottomMenuBgColor = '${BOTTOMMENU_BG_COLOR}';
-  static const String bottomMenuIconColor = '${BOTTOMMENU_ICON_COLOR}';
-  static const String bottomMenuTextColor = '${BOTTOMMENU_TEXT_COLOR}';
-  static const String bottomMenuFont = '${BOTTOMMENU_FONT}';
-  static const String bottomMenuFontSize = '${BOTTOMMENU_FONT_SIZE}';
-  static const bool bottomMenuFontBold = ${BOTTOMMENU_FONT_BOLD};
-  static const bool bottomMenuFontItalic = ${BOTTOMMENU_FONT_ITALIC};
-  static const String bottomMenuActiveTabColor = '${BOTTOMMENU_ACTIVE_TAB_COLOR}';
-  static const String bottomMenuIconPosition = '${BOTTOMMENU_ICON_POSITION}';
-  static const String bottomMenuVisibleOn = '${BOTTOMMENU_VISIBLE_ON}';
+  static const int splashDuration = ${SPLASH_DURATION};
+  static const String bottommenuItems = r'''${BOTTOMMENU_ITEMS}''';
+  static const String bottommenuBgColor = '${BOTTOMMENU_BG_COLOR}';
+  static const String bottommenuIconColor = '${BOTTOMMENU_ICON_COLOR}';
+  static const String bottommenuTextColor = '${BOTTOMMENU_TEXT_COLOR}';
+  static const String bottommenuFont = '${BOTTOMMENU_FONT}';
+  static const double bottommenuFontSize = ${BOTTOMMENU_FONT_SIZE};
+  static const bool bottommenuFontBold = ${BOTTOMMENU_FONT_BOLD};
+  static const bool bottommenuFontItalic = ${BOTTOMMENU_FONT_ITALIC};
+  static const String bottommenuActiveTabColor = '${BOTTOMMENU_ACTIVE_TAB_COLOR}';
+  static const String bottommenuIconPosition = '${BOTTOMMENU_ICON_POSITION}';
+  static const String bottommenuVisibleOn = '${BOTTOMMENU_VISIBLE_ON}';
+  static const bool pushNotify = ${PUSH_NOTIFY};
 }
 EOF
 }
 
 # Function to generate AndroidManifest.xml
 generate_android_manifest() {
-    cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+    cat > android/app/src/main/AndroidManifest.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' )
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>' )
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo '    <uses-permission android:name="android.permission.VIBRATE"/>' )
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' )
-    $( [ "${IS_CAMERA}" = "true" ] && echo '    <uses-permission android:name="android.permission.CAMERA"/>' )
-    $( [ "${IS_LOCATION}" = "true" ] && echo '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>' )
-    $( [ "${IS_LOCATION}" = "true" ] && echo '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' )
-    $( [ "${IS_MIC}" = "true" ] && echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' )
-    $( [ "${IS_NOTIFICATION}" = "true" ] && echo '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' )
-    $( [ "${IS_CONTACT}" = "true" ] && echo '    <uses-permission android:name="android.permission.READ_CONTACTS"/>' )
-    $( [ "${IS_BIOMETRIC}" = "true" ] && echo '    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>' )
-    $( [ "${IS_CALENDAR}" = "true" ] && echo '    <uses-permission android:name="android.permission.READ_CALENDAR"/>' )
-    $( [ "${IS_CALENDAR}" = "true" ] && echo '    <uses-permission android:name="android.permission.WRITE_CALENDAR"/>' )
-    $( [ "${IS_STORAGE}" = "true" ] && echo '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' )
-    $( [ "${IS_STORAGE}" = "true" ] && echo '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>' )
-    
+
+    <!-- PERMISSIONS_PLACEHOLDER -->
+
     <application
         android:label="${APP_NAME}"
-        android:name="io.flutter.embedding.android.FlutterApplication"
+        android:name="\${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -385,38 +400,12 @@ generate_android_manifest() {
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             
-            $( [ "${IS_DEEPLINK}" = "true" ] && echo '
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="${WEB_URL}" />
-            </intent-filter>' )
+            <!-- DEEPLINK_INTENT_FILTER_PLACEHOLDER -->
             
-            $( [ "${PUSH_NOTIFY}" = "true" ] && echo '
-            <intent-filter>
-                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>' )
+            <!-- FIREBASE_NOTIFICATION_INTENT_FILTER_PLACEHOLDER -->
         </activity>
         
-        $( [ "${PUSH_NOTIFY}" = "true" ] && echo '
-        <service
-            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-        
-        <receiver
-            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
-            android:exported="true"
-            android:permission="com.google.android.c2dm.permission.SEND">
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-            </intent-filter>
-        </receiver>' )
+        <!-- FIREBASE_SERVICES_PLACEHOLDER -->
         
         <meta-data
             android:name="flutterEmbedding"
@@ -428,7 +417,7 @@ EOF
 
 # Function to generate build.gradle
 generate_build_gradle() {
-    cat > android/app/build.gradle << 'EOF'
+    cat > android/app/build.gradle << EOF
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -455,7 +444,7 @@ if (flutterVersionName == null) {
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-$( [ "${PUSH_NOTIFY}" = "true" ] && echo "apply plugin: 'com.google.gms.google-services'" )
+// FIREBASE_GRADLE_PLUGIN_PLACEHOLDER
 
 android {
     namespace "${PKG_NAME}"
@@ -484,18 +473,12 @@ android {
     }
 
     signingConfigs {
-        $( [ "${USE_KEYSTORE}" = "true" ] && echo '
-        release {
-            storeFile file("keystore.jks")
-            storePassword "${CM_KEYSTORE_PASSWORD}"
-            keyAlias "${CM_KEY_ALIAS}"
-            keyPassword "${CM_KEY_PASSWORD}"
-        }' )
+        // SIGNING_CONFIGS_BLOCK_PLACEHOLDER
     }
 
     buildTypes {
         release {
-            $( [ "${USE_KEYSTORE}" = "true" ] && echo 'signingConfig signingConfigs.release' )
+            // BUILD_TYPES_SIGNING_CONFIG_PLACEHOLDER
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -508,15 +491,15 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo "implementation platform('com.google.firebase:firebase-bom:32.7.0')" )
-    $( [ "${PUSH_NOTIFY}" = "true" ] && echo "implementation 'com.google.firebase:firebase-messaging'" )
+    // FIREBASE_BOM_DEPENDENCY_PLACEHOLDER
+    // FIREBASE_MESSAGING_DEPENDENCY_PLACEHOLDER
 }
 EOF
 }
 
 # Function to generate pubspec.yaml
 generate_pubspec_yaml() {
-    cat > pubspec.yaml << 'EOF'
+    cat > pubspec.yaml << EOF
 name: quikapp
 description: "A new Flutter project."
 publish_to: 'none'
@@ -529,27 +512,27 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  $( [ "${PUSH_NOTIFY}" = "true" ] && echo "  firebase_core: ^2.24.2" )
-  $( [ "${PUSH_NOTIFY}" = "true" ] && echo "  firebase_messaging: ^14.7.9" )
+  # FIREBASE_CORE_DEPENDENCY_PLACEHOLDER
+  # FIREBASE_MESSAGING_PUBSPEC_DEPENDENCY_PLACEHOLDER
   flutter_inappwebview: ^5.8.0
   url_launcher: ^6.2.2
   package_info_plus: ^5.0.1
   shared_preferences: ^2.2.2
   flutter_local_notifications: ^16.2.0
   permission_handler: ^11.1.0
-  $( [ "${IS_CAMERA}" = "true" ] && echo "  camera: ^0.10.5+9" )
-  $( [ "${IS_LOCATION}" = "true" ] && echo "  geolocator: ^10.1.0" )
-  $( [ "${IS_MIC}" = "true" ] && echo "  speech_to_text: ^6.5.1" )
-  $( [ "${IS_CONTACT}" = "true" ] && echo "  contacts_service: ^0.6.3" )
-  $( [ "${IS_BIOMETRIC}" = "true" ] && echo "  local_auth: ^2.1.8" )
-  $( [ "${IS_CALENDAR}" = "true" ] && echo "  calendar_events: ^0.0.1" )
-  $( [ "${IS_STORAGE}" = "true" ] && echo "  file_picker: ^6.1.1" )
-  $( [ "${IS_CHATBOT}" = "true" ] && echo "  flutter_chat_ui: ^1.6.10" )
-  $( [ "${IS_DEEPLINK}" = "true" ] && echo "  uni_links: ^0.5.1" )
-  $( [ "${IS_SPLASH}" = "true" ] && echo "  flutter_native_splash: ^2.3.9" )
-  $( [ "${IS_PULLDOWN}" = "true" ] && echo "  pull_to_refresh: ^2.0.0" )
-  $( [ "${IS_BOTTOMMENU}" = "true" ] && echo "  flutter_svg: ^2.0.9" )
-  $( [ "${IS_LOAD_IND}" = "true" ] && echo "  loading_animation_widget: ^1.2.0+4" )
+  # CAMERA_DEPENDENCY_PLACEHOLDER
+  # GEOLOCATOR_DEPENDENCY_PLACEHOLDER
+  # SPEECH_TO_TEXT_DEPENDENCY_PLACEHOLDER
+  # CONTACTS_SERVICE_DEPENDENCY_PLACEHOLDER
+  # LOCAL_AUTH_DEPENDENCY_PLACEHOLDER
+  # CALENDAR_EVENTS_DEPENDENCY_PLACEHOLDER
+  # FILE_PICKER_DEPENDENCY_PLACEHOLDER
+  # FLUTTER_CHAT_UI_DEPENDENCY_PLACEHOLDER
+  # UNI_LINKS_DEPENDENCY_PLACEHOLDER
+  # FLUTTER_NATIVE_SPLASH_DEPENDENCY_PLACEHOLDER
+  # PULL_TO_REFRESH_DEPENDENCY_PLACEHOLDER
+  # FLUTTER_SVG_DEPENDENCY_PLACEHOLDER
+  # LOADING_ANIMATION_WIDGET_DEPENDENCY_PLACEHOLDER
 
 dev_dependencies:
   flutter_test:
