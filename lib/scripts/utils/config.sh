@@ -206,7 +206,7 @@ generate_android_manifest() {
     
     <application
         android:label="${APP_NAME}"
-        android:name="\\${applicationName}"
+        android:name="io.flutter.embedding.android.FlutterApplication"
         android:icon="@mipmap/ic_launcher">
         
         <activity
