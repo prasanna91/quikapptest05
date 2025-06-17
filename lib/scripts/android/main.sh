@@ -275,47 +275,8 @@ check_flutter_version() {
   CURRENT_DART_VERSION=$(flutter --version | grep -o "Dart [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
   log "Current Dart version: $CURRENT_DART_VERSION"
   
-  # Get required versions from pubspec.yaml
-  if [ -f "pubspec.yaml" ]; then
-    # Get Flutter SDK version
-    REQUIRED_FLUTTER_VERSION=$(grep -A1 "sdk:" pubspec.yaml | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "")
-    
-    # Get Dart SDK version
-    REQUIRED_DART_VERSION=$(grep -A2 "sdk:" pubspec.yaml | grep -o ">= [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2 || echo "")
-    
-    if [ -n "$REQUIRED_FLUTTER_VERSION" ]; then
-      log "Required Flutter version from pubspec.yaml: $REQUIRED_FLUTTER_VERSION"
-      log "Required Dart version from pubspec.yaml: $REQUIRED_DART_VERSION"
-      
-      # Check Flutter version
-      if [ "$CURRENT_FLUTTER_VERSION" != "$REQUIRED_FLUTTER_VERSION" ]; then
-        log "Flutter version mismatch. Attempting to install version $REQUIRED_FLUTTER_VERSION..."
-        
-        # Try direct installation first (most reliable in CI)
-        if install_flutter_version "$REQUIRED_FLUTTER_VERSION"; then
-          log "Successfully installed Flutter version $REQUIRED_FLUTTER_VERSION"
-        else
-          log "[ERROR] Failed to install Flutter version $REQUIRED_FLUTTER_VERSION"
-          send_notification "FAILED" "Failed to install Flutter version $REQUIRED_FLUTTER_VERSION" "${BUILD_URL:-}"
-          exit 1
-        fi
-      else
-        log "Flutter version matches requirements"
-      fi
-      
-      # Check Dart version
-      if [ -n "$REQUIRED_DART_VERSION" ] && [ "$CURRENT_DART_VERSION" != "$REQUIRED_DART_VERSION" ]; then
-        log "[WARN] Dart version mismatch. Current: $CURRENT_DART_VERSION, Required: $REQUIRED_DART_VERSION"
-        log "This might cause issues. Consider updating your Flutter installation."
-      fi
-    else
-      log "[WARN] Could not determine required Flutter version from pubspec.yaml"
-    fi
-  else
-    log "[ERROR] pubspec.yaml not found"
-    send_notification "FAILED" "pubspec.yaml not found" "${BUILD_URL:-}"
-    exit 1
-  fi
+  # Skip version checking and use Flutter 3.22.1
+  log "Using Flutter 3.22.1 as specified in codemagic.yaml"
 }
 
 # Function to clean and prepare Flutter project
@@ -364,7 +325,7 @@ log "Starting Flutter environment setup..."
 # Validate Flutter environment
 validate_flutter_env
 
-# Check and set Flutter version
+# Check Flutter version (now just logs the version)
 check_flutter_version
 
 # Prepare Flutter project

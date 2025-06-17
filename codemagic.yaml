@@ -65,7 +65,6 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -141,7 +140,6 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-
       - name: Install FVM
         script: |
           dart pub global activate fvm
@@ -216,7 +214,6 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-
       - name: Install FVM
         script: |
           dart pub global activate fvm
