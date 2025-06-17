@@ -2,21 +2,24 @@
 set -euo pipefail
 trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+
+# Source common variables and utilities
+source "$SCRIPT_DIR/../utils/variables.sh"
+source "$SCRIPT_DIR/../utils/notifications.sh"
+
 # Logging function
 log() {
   echo "[ANDROID][$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Source common variables with defaults
-source lib/scripts/utils/variables.sh
-source lib/scripts/utils/notifications.sh
-
 # Source local environment variables if available (for local development/testing)
 # These will override defaults from variables.sh
-if [ -f "lib/config/env.sh" ]; then
+if [ -f "$PROJECT_ROOT/lib/config/env.sh" ]; then
   log "Sourcing local environment variables from lib/config/env.sh"
-  # Note: `source` (or `.`) automatically exports variables when called directly
-  source lib/config/env.sh
+  source "$PROJECT_ROOT/lib/config/env.sh"
 else
   log "lib/config/env.sh not found. Assuming Codemagic environment variables (CM_ENV) are present."
 fi
@@ -149,6 +152,71 @@ log "  CM_KEY_ALIAS: ${CM_KEY_ALIAS:-[NOT SET]}"
 log "  CM_KEY_PASSWORD: ${CM_KEY_PASSWORD:-[NOT SET]}"
 log "=== End Environment Variables Debug ==="
 
+# Function to check if a command exists
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Function to validate Flutter environment
+validate_flutter_env() {
+  log "Validating Flutter environment..."
+  
+  # Check if Flutter is installed
+  if ! command_exists flutter; then
+    log "Flutter is not installed or not in PATH"
+    log "Please install Flutter from https://flutter.dev/docs/get-started/install"
+    log "After installation, make sure to add Flutter to your PATH"
+    exit 1
+  fi
+  
+  # Check Flutter version
+  local flutter_version
+  flutter_version=$(flutter --version 2>/dev/null | grep -o "Flutter [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
+  if [ -z "$flutter_version" ]; then
+    log "Failed to get Flutter version"
+    exit 1
+  fi
+  
+  log "Flutter version: $flutter_version"
+  
+  # Check if Flutter is properly configured
+  if ! flutter doctor >/dev/null 2>&1; then
+    log "Flutter is not properly configured. Please run 'flutter doctor' for details"
+    exit 1
+  fi
+  
+  log "Flutter environment validation completed successfully"
+}
+
+# Function to check Flutter version
+check_flutter_version() {
+  log "Checking Flutter version..."
+  flutter --version
+}
+
+# Function to prepare Flutter project
+prepare_flutter_project() {
+  log "Preparing Flutter project..."
+  
+  # Check if pubspec.yaml exists
+  if [ ! -f "$PROJECT_ROOT/pubspec.yaml" ]; then
+    log "pubspec.yaml not found. Creating new Flutter project..."
+    cd "$PROJECT_ROOT"
+    flutter create . --platforms=android
+  fi
+  
+  # Get dependencies
+  log "Getting Flutter dependencies..."
+  flutter pub get
+  
+  # Clean the project
+  log "Cleaning Flutter project..."
+  flutter clean
+  
+  log "Flutter project preparation completed successfully"
+}
+
+# Main setup sequence
 log "Starting Flutter environment setup..."
 
 # Send build start notification
