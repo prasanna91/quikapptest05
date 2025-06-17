@@ -81,6 +81,10 @@ export EMAIL_SMTP_PORT="587"
 export EMAIL_SMTP_USER="${Notifi_E_ID:-prasannasrie@gmail.com}"
 export EMAIL_SMTP_PASS="jbbf nzhm zoay lbwb"
 
+# Firebase Configuration
+export firebase_config_android=${firebase_config_android:-""}
+export firebase_config_ios=${firebase_config_ios:-""}
+
 # Automatically determine settings based on variable presence
 if [ -n "${KEY_STORE:-}" ] && [ -n "${CM_KEYSTORE_PASSWORD:-}" ] && [ -n "${CM_KEY_ALIAS:-}" ] && [ -n "${CM_KEY_PASSWORD:-}" ]; then
     USE_KEYSTORE="true"

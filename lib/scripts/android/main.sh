@@ -246,6 +246,11 @@ prepare_flutter_project() {
     flutter create . --platforms=android
   fi
   
+  # Update version in pubspec.yaml
+  log "Updating version in pubspec.yaml..."
+  sed -i.bak "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" "$PROJECT_ROOT/pubspec.yaml"
+  rm -f "$PROJECT_ROOT/pubspec.yaml.bak"
+  
   # Get dependencies
   log "Getting Flutter dependencies..."
   flutter pub get
@@ -359,17 +364,49 @@ else
   log "[WARN] Permissions sub-script not found. Skipping permissions setup."
 fi
 
+# Function to download Firebase config
+download_firebase_config() {
+  log "Setting up Firebase..."
+  if [ "${PUSH_NOTIFY:-}" = "true" ]; then
+    log "PUSH_NOTIFY is true; setting up Firebase config..."
+    log "Downloading google-services.json from URL..."
+    
+    # Ensure the URL is properly set
+    if [ -z "${firebase_config_android:-}" ]; then
+      log "[ERROR] Firebase configuration URL is not set"
+      return 1
+    fi
+    
+    # Remove any quotes from the URL
+    local clean_url="${firebase_config_android//[\"']/}"
+    log "Using URL: $clean_url"
+    
+    # Try curl first
+    if command_exists curl; then
+      if curl -L -o "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
+        log "Successfully downloaded google-services.json using curl"
+        return 0
+      fi
+    fi
+    
+    # Try wget if curl fails
+    if command_exists wget; then
+      if wget -O "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
+        log "Successfully downloaded google-services.json using wget"
+        return 0
+      fi
+    fi
+    
+    log "[ERROR] Failed to download google-services.json"
+    return 1
+  else
+    log "PUSH_NOTIFY is false; skipping Firebase setup"
+  fi
+}
+
 # Setting up Firebase
 log "Setting up Firebase..."
-if [ "${PUSH_NOTIFY:-}" = "true" ]; then
-  log "PUSH_NOTIFY is true; setting up Firebase config..."
-  
-  # Check if Firebase config is provided
-  if [ -z "${firebase_config_android:-}" ]; then
-    log "[ERROR] FIREBASE_CONFIG_ANDROID environment variable is not set"
-    exit 1
-  fi
-
+if download_firebase_config; then
   # Remove existing google-services.json if present
   if [ -f "android/app/google-services.json" ]; then
     log "Removing existing google-services.json..."
@@ -448,7 +485,8 @@ if [ "${PUSH_NOTIFY:-}" = "true" ]; then
     fi
   fi
 else
-  log "PUSH_NOTIFY is false; skipping Firebase config."
+  log "Firebase setup failed."
+  exit 1
 fi
 
 # Keystore setup (if KEY_STORE is set)
@@ -508,6 +546,7 @@ if [ -n "${PKG_NAME:-}" ]; then
 
   if [ -f "$OLD_MAIN_ACTIVITY_PATH" ]; then
     OLD_PACKAGE_IN_FILE="com.example.quikapptest05"
+    # shellcheck disable=SC1078,SC1079
     # Create new package directory structure if it doesn't exist
     mkdir -p "$NEW_MAIN_ACTIVITY_DIR"
 
