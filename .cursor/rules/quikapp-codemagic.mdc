@@ -56,6 +56,59 @@ Supports All Android + iOS Inputs Above
 
 Output: Both output/android/*.apk/.aab and output/ios/*.ipa
 
+Push Notification (Firebase) Configuration:
+
+Rule: The PUSH_NOTIFY flag dictates the necessity of Firebase integration.
+Action:
+If PUSH_NOTIFY is set to true, then Firebase integration must be enabled and configured in the build process.
+If PUSH_NOTIFY is set to false, then Firebase integration is not required and should be skipped.
+
+Rule: The KEYSTORE variable controls the Keystore setup process. Even if issues arise with Keystore configuration, the build process should not stop but instead skip the Keystore setup and continue to the next steps. Error notifications will be sent where applicable.
+
+Action & Validation Flow (Revised for Continuity):
+
+
+a.  Keystore Presence Check:
+* If the KEYSTORE variable is null or empty (contains no data):
+* Log/Print: "Keystore variable is empty. Skipping Keystore setup and continuing build."
+* Action: Skip the entire Keystore setup process and proceed to the next build steps.
+
+b.  Keystore Credential Validation (Pre-Check):
+* If KEYSTORE contains data (implies an attempt at Keystore setup will be made), then validate the presence of all required Keystore credential variables:
+* CM_KEYSTORE_PASSWORD
+* CM_KEY_ALIAS
+* CM_KEY_PASSWORD
+* Action on Missing Credentials: If any one of these three variables is missing, null, or empty:
+* Send Email Notification:
+* Subject: "Alert: Android App Codesigning Skipped - Missing Keystore Credentials"
+* Body: "Dear Team, One or more required Keystore credential variables (CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD) are missing or empty. Skipping Keystore setup and Android App Codesigning. The build will continue without signing."
+* Log/Print: "Missing Keystore credentials. Skipping Keystore setup and continuing build without signing."
+* Action: Skip the Keystore setup process and proceed to the next build steps.
+
+c.  Keystore Download (if URL present and credentials are valid):
+* If KEYSTORE contains a valid URL AND all three credential variables are present:
+* Attempt to download the Keystore file from this URL.
+* Error Handling on Download Failure: If the download fails:
+* Send Email Notification:
+* Subject: "Alert: Android App Codesigning Skipped - Keystore Download Failed"
+* Body: "Dear Team, Failed to download Keystore from the provided URL in the KEYSTORE variable. Skipping Keystore setup and Android App Codesigning. The build will continue without signing. Please check the URL and network connectivity."
+* Log/Print: "Keystore download failed. Skipping Keystore setup and continuing build without signing."
+* Action: Skip the Keystore setup and proceed to the next build steps.
+
+d.  Keystore Installation (if all conditions met):
+* If the KEYSTORE variable contains data (or the file was successfully downloaded from its URL) AND all three credential variables (CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD) are present and valid, AND no download errors occurred:
+* Proceed with the Keystore installation/setup. This includes injecting the Keystore properties into the build configuration for codesigning.
+* Log/Print: "Keystore setup successful. Proceeding with Android App Codesigning."
+
+e.  Generic Keystore Setup Error (Catch-all):
+* If, at any point during the Keystore setup (after initial checks and before successful installation), any other unexpected error occurs:
+* Send Email Notification:
+* Subject: "Alert: Android App Codesigning Skipped - Keystore Setup Error"
+* Body: "Dear Team, An unhandled error occurred during the Android Keystore setup. Skipping Keystore setup and Android App Codesigning. The build will continue without signing. Please review build logs for details."
+* Log/Print: "Unhandled error during Keystore setup. Skipping Keystore setup and continuing build without signing."
+* Action: Skip the Keystore setup and proceed to the next build steps.
+
+
 📦 Environment Variables (Unified Format for All Workflows)
 
 {

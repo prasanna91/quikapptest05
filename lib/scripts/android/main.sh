@@ -365,139 +365,426 @@ else
   log "[WARN] Permissions sub-script not found. Skipping permissions setup."
 fi
 
-# Function to download Firebase config
-download_firebase_config() {
-  log "Setting up Firebase..."
-  if [ "${PUSH_NOTIFY:-}" = "true" ]; then
-    log "PUSH_NOTIFY is true; setting up Firebase config..."
-    log "Downloading google-services.json from URL..."
-    
-    # Ensure the URL is properly set
-    if [ -z "${firebase_config_android:-}" ]; then
-      log "[ERROR] Firebase configuration URL is not set"
-      return 1
+# Function to validate environment
+validate_environment() {
+  log "Validating environment..."
+  
+  # Check write permissions
+  if [ ! -w "$PROJECT_ROOT" ]; then
+    log "[ERROR] No write permission in $PROJECT_ROOT"
+    exit 1
+  fi
+  
+  # Check required environment variables
+  local required_vars=(
+    "APP_NAME"
+    "PKG_NAME"
+    "VERSION_NAME"
+    "VERSION_CODE"
+    "ORG_NAME"
+    "WEB_URL"
+    "EMAIL_ID"
+  )
+  
+  for var in "${required_vars[@]}"; do
+    if [ -z "${!var:-}" ]; then
+      log "[ERROR] Required environment variable $var is not set"
+      exit 1
     fi
-    
-    # Remove any quotes from the URL
-    local clean_url="${firebase_config_android//[\"']/}"
-    log "Using URL: $clean_url"
-    
-    # Try curl first
-    if command_exists curl; then
-      if curl -L -o "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
-        log "Successfully downloaded google-services.json using curl"
-        return 0
-      fi
-    fi
-    
-    # Try wget if curl fails
-    if command_exists wget; then
-      if wget -O "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
-        log "Successfully downloaded google-services.json using wget"
-        return 0
-      fi
-    fi
-    
-    log "[ERROR] Failed to download google-services.json"
+  done
+  
+  # Cleanup old log files (keep last 5)
+  find "$PROJECT_ROOT" -name "build_android_*.log" -type f | sort -r | tail -n +6 | xargs rm -f
+  
+  log "Environment validation completed"
+}
+
+# Function to validate Firebase config
+validate_firebase_config() {
+  local config_file="$1"
+  
+  # Check if file exists
+  if [ ! -f "$config_file" ]; then
+    log "[ERROR] Firebase config file not found: $config_file"
     return 1
-  else
-    log "PUSH_NOTIFY is false; skipping Firebase setup"
+  fi
+  
+  # Check if it's a valid JSON file
+  if ! jq empty "$config_file" 2>/dev/null; then
+    log "[ERROR] Invalid JSON format in Firebase config file"
+    return 1
+  fi
+  
+  # Check required Firebase config fields
+  if ! jq -e '.project_info' "$config_file" >/dev/null 2>&1; then
+    log "[ERROR] Missing project_info in Firebase config"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Function to backup file
+backup_file() {
+  local file="$1"
+  if [ -f "$file" ]; then
+    local backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
+    cp "$file" "$backup"
+    log "Created backup: $backup"
   fi
 }
 
-# Setting up Firebase
-log "Setting up Firebase..."
-if download_firebase_config; then
-  # Remove existing google-services.json if present
-  if [ -f "android/app/google-services.json" ]; then
-    log "Removing existing google-services.json..."
-    rm "android/app/google-services.json"
+# Function to validate keystore
+validate_keystore() {
+  local keystore_file="$1"
+  local keystore_password="$2"
+  local key_alias="$3"
+  local key_password="$4"
+  
+  # Check if keystore file exists
+  if [ ! -f "$keystore_file" ]; then
+    log "[ERROR] Keystore file not found: $keystore_file"
+    return 1
   fi
+  
+  # Validate keystore format
+  if ! keytool -list -keystore "$keystore_file" -storepass "$keystore_password" >/dev/null 2>&1; then
+    log "[ERROR] Invalid keystore format or password"
+    return 1
+  fi
+  
+  # Check if alias exists
+  if ! keytool -list -keystore "$keystore_file" -storepass "$keystore_password" -alias "$key_alias" >/dev/null 2>&1; then
+    log "[ERROR] Key alias not found in keystore"
+    return 1
+  fi
+  
+  # Validate key password
+  if ! keytool -list -keystore "$keystore_file" -storepass "$keystore_password" -alias "$key_alias" -keypass "$key_password" >/dev/null 2>&1; then
+    log "[ERROR] Invalid key password"
+    return 1
+  fi
+  
+  return 0
+}
 
-  # Create assets directory if it doesn't exist
+# Function to check password strength
+check_password_strength() {
+  local password="$1"
+  local min_length=8
+  
+  # Check length
+  if [ ${#password} -lt $min_length ]; then
+    log "[WARN] Password is too short (minimum $min_length characters)"
+    return 1
+  fi
+  
+  # Check for uppercase
+  if ! [[ "$password" =~ [A-Z] ]]; then
+    log "[WARN] Password should contain at least one uppercase letter"
+    return 1
+  fi
+  
+  # Check for lowercase
+  if ! [[ "$password" =~ [a-z] ]]; then
+    log "[WARN] Password should contain at least one lowercase letter"
+    return 1
+  fi
+  
+  # Check for numbers
+  if ! [[ "$password" =~ [0-9] ]]; then
+    log "[WARN] Password should contain at least one number"
+    return 1
+  fi
+  
+  # Check for special characters
+  if ! [[ "$password" =~ [^a-zA-Z0-9] ]]; then
+    log "[WARN] Password should contain at least one special character"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Add environment validation at the start
+validate_environment
+
+# Function to setup Firebase configuration
+setup_firebase() {
+  log "Setting up Firebase configuration..."
+  
+  if [ "${PUSH_NOTIFY:-}" != "true" ]; then
+    log "PUSH_NOTIFY is false; skipping Firebase setup."
+    return 0
+  fi
+  
+  # Backup existing config
+  backup_file "$ANDROID_FIREBASE_CONFIG_PATH"
+  
+  # Validate Firebase config URL
+  if [ -z "${firebase_config_android:-}" ]; then
+    log "[ERROR] Firebase configuration URL is not set"
+    send_email_notification "failure" "Firebase configuration URL is not set" "$BUILD_LOG_FILE"
+    return 1
+  fi
+  
+  # Remove any quotes from the URL
+  local clean_url="${firebase_config_android//[\"']/}"
+  log "Using Firebase config URL: $clean_url"
+  
+  # Create necessary directories
+  mkdir -p "$ANDROID_ROOT/app"
   mkdir -p "assets"
-
-  # Check if the config is a local file or URL
-  if [ -f "${firebase_config_android}" ]; then
-    # It's a local file, copy it directly
-    log "Using local Firebase config file..."
-    cp "${firebase_config_android}" "android/app/google-services.json"
-    if [ $? -eq 0 ]; then
-      log "Successfully copied local google-services.json"
-      # Also copy to assets folder for Dart validation
-      cp "${firebase_config_android}" "assets/google-services.json"
-      log "Copied google-services.json to assets folder for Dart validation"
-    else
-      log "[ERROR] Failed to copy local google-services.json"
-      exit 1
-    fi
-  else
-    # It's a URL, try downloading with curl first, then wget
-    log "Downloading google-services.json from URL..."
-    MAX_RETRIES=3
-    RETRY_COUNT=0
-    SUCCESS=false
-
-    # URL encode the Firebase config URL
-    ENCODED_URL=$(echo "${firebase_config_android}" | sed 's/ /%20/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-    log "Using encoded URL: ${ENCODED_URL}"
-
-    # Try curl first
-    while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
-      if curl -L -o "android/app/google-services.json" "${ENCODED_URL}"; then
-        SUCCESS=true
-        log "Successfully downloaded google-services.json using curl"
-      else
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-          log "[WARN] Failed to download with curl (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
-          sleep 2
-        fi
-      fi
-    done
-
-    # If curl failed, try wget
-    if [ "$SUCCESS" = false ]; then
-      log "Curl failed, trying wget..."
-      RETRY_COUNT=0
-      while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
-        if wget -O "android/app/google-services.json" "${ENCODED_URL}"; then
-          SUCCESS=true
-          log "Successfully downloaded google-services.json using wget"
-        else
-          RETRY_COUNT=$((RETRY_COUNT + 1))
-          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-            log "[WARN] Failed to download with wget (attempt $RETRY_COUNT of $MAX_RETRIES). Retrying..."
-            sleep 2
-          fi
-        fi
-      done
-    fi
-
-    if [ "$SUCCESS" = true ]; then
+  
+  # Try downloading with curl first
+  if command_exists curl; then
+    if curl -L -o "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
+      log "Successfully downloaded google-services.json using curl"
       # Copy to assets folder for Dart validation
-      cp "android/app/google-services.json" "assets/google-services.json"
+      cp "$ANDROID_FIREBASE_CONFIG_PATH" "assets/google-services.json"
       log "Copied google-services.json to assets folder for Dart validation"
-    else
-      log "[ERROR] Failed to download google-services.json after all attempts."
-      log "[ERROR] Original URL: ${firebase_config_android}"
-      log "[ERROR] Encoded URL: ${ENCODED_URL}"
-      exit 1
+      
+      if ! validate_firebase_config "$ANDROID_FIREBASE_CONFIG_PATH"; then
+        log "[ERROR] Invalid Firebase configuration"
+        send_email_notification "failure" "Invalid Firebase configuration" "$BUILD_LOG_FILE"
+        return 1
+      fi
+      
+      return 0
     fi
+  fi
+  
+  # Try wget if curl fails
+  if command_exists wget; then
+    if wget -O "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
+      log "Successfully downloaded google-services.json using wget"
+      # Copy to assets folder for Dart validation
+      cp "$ANDROID_FIREBASE_CONFIG_PATH" "assets/google-services.json"
+      log "Copied google-services.json to assets folder for Dart validation"
+      
+      if ! validate_firebase_config "$ANDROID_FIREBASE_CONFIG_PATH"; then
+        log "[ERROR] Invalid Firebase configuration"
+        send_email_notification "failure" "Invalid Firebase configuration" "$BUILD_LOG_FILE"
+        return 1
+      fi
+      
+      return 0
+    fi
+  fi
+  
+  log "[ERROR] Failed to download google-services.json"
+  send_email_notification "failure" "Failed to download Firebase configuration" "$BUILD_LOG_FILE"
+  return 1
+}
+
+# Function to update build.gradle for Firebase
+update_build_gradle_for_firebase() {
+  if [ "${PUSH_NOTIFY:-}" != "true" ]; then
+    return 0
+  fi
+  
+  local build_gradle="$ANDROID_ROOT/app/build.gradle"
+  if [ ! -f "$build_gradle" ]; then
+    log "[ERROR] build.gradle not found"
+    return 1
+  fi
+  
+  # Add Firebase dependencies if not present
+  if ! grep -q "com.google.gms:google-services" "$build_gradle"; then
+    sed -i '' '/dependencies {/a\
+    implementation platform('\''com.google.firebase:firebase-bom:32.7.4'\'')\
+    implementation '\''com.google.firebase:firebase-analytics'\''\
+    implementation '\''com.google.firebase:firebase-messaging'\''\
+    apply plugin: '\''com.google.gms.google-services'\''' "$build_gradle"
+  fi
+  
+  # Add Google Services plugin if not present
+  if ! grep -q "com.google.gms.google-services" "$ANDROID_ROOT/build.gradle"; then
+    sed -i '' '/buildscript {/a\
+    dependencies {\
+        classpath '\''com.google.gms:google-services:4.4.1'\''\
+    }' "$ANDROID_ROOT/build.gradle"
+  fi
+  
+  return 0
+}
+
+# Replace the existing Firebase setup code with the new function calls
+log "Setting up Firebase..."
+if setup_firebase; then
+  if update_build_gradle_for_firebase; then
+    log "Firebase setup completed successfully"
+  else
+    log "[ERROR] Failed to update build.gradle for Firebase"
+    send_email_notification "failure" "Failed to update build.gradle for Firebase" "$BUILD_LOG_FILE"
   fi
 else
-  log "Firebase setup failed."
-  exit 1
+  log "[ERROR] Firebase setup failed"
+  send_email_notification "failure" "Firebase setup failed" "$BUILD_LOG_FILE"
 fi
 
-# Keystore setup (if KEY_STORE is set)
-if [ -n "${KEY_STORE:-}" ]; then
-  log "Setting up Keystore..."
-  if [ -f "lib/scripts/android/signing.sh" ]; then
-    bash lib/scripts/android/signing.sh
-  else
-    log "[WARN] Signing sub-script not found. Skipping Keystore setup."
+# Function to send keystore error notification
+send_keystore_error_notification() {
+  local error_type=$1
+  local error_message=$2
+  
+  local subject=""
+  local body=""
+  
+  case "$error_type" in
+    "missing_credentials")
+      subject="Alert: Android App Codesigning Skipped - Missing Keystore Credentials"
+      body="Dear Team,\n\nOne or more required Keystore credential variables (CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD) are missing or empty. Skipping Keystore setup and Android App Codesigning. The build will continue without signing."
+      ;;
+    "download_failed")
+      subject="Alert: Android App Codesigning Skipped - Keystore Download Failed"
+      body="Dear Team,\n\nFailed to download Keystore from the provided URL in the KEYSTORE variable. Skipping Keystore setup and Android App Codesigning. The build will continue without signing. Please check the URL and network connectivity."
+      ;;
+    "setup_error")
+      subject="Alert: Android App Codesigning Skipped - Keystore Setup Error"
+      body="Dear Team,\n\nAn unhandled error occurred during the Android Keystore setup. Skipping Keystore setup and Android App Codesigning. The build will continue without signing. Please review build logs for details."
+      ;;
+    *)
+      subject="Alert: Android App Codesigning Skipped - Unknown Error"
+      body="Dear Team,\n\nAn unknown error occurred during the Keystore setup process. Skipping Keystore setup and Android App Codesigning. The build will continue without signing."
+      ;;
+  esac
+  
+  # Send email notification
+  send_email_notification "failure" "$error_message" "$BUILD_LOG_FILE" "" "" "$subject" "$body"
+}
+
+# Function to validate keystore credentials
+validate_keystore_credentials() {
+  if [ -z "${CM_KEYSTORE_PASSWORD:-}" ] || [ -z "${CM_KEY_ALIAS:-}" ] || [ -z "${CM_KEY_PASSWORD:-}" ]; then
+    log "[WARN] Missing Keystore credentials. Skipping Keystore setup and continuing build without signing."
+    send_keystore_error_notification "missing_credentials" "Missing Keystore credentials"
+    return 1
   fi
+  return 0
+}
+
+# Function to download keystore
+download_keystore() {
+  local keystore_url="$1"
+  local keystore_path="$2"
+  
+  log "Attempting to download Keystore from URL..."
+  
+  # Try curl first
+  if command_exists curl; then
+    if curl -L -o "$keystore_path" "$keystore_url"; then
+      log "Successfully downloaded Keystore using curl"
+      return 0
+    fi
+  fi
+  
+  # Try wget if curl fails
+  if command_exists wget; then
+    if wget -O "$keystore_path" "$keystore_url"; then
+      log "Successfully downloaded Keystore using wget"
+      return 0
+    fi
+  fi
+  
+  log "[ERROR] Failed to download Keystore"
+  send_keystore_error_notification "download_failed" "Failed to download Keystore from URL: $keystore_url"
+  return 1
+}
+
+# Function to setup keystore
+setup_keystore() {
+  log "Setting up Keystore..."
+  
+  if [ -z "${KEY_STORE:-}" ]; then
+    log "Keystore variable is empty. Skipping Keystore setup and continuing build."
+    return 0
+  fi
+  
+  # Validate credentials
+  if ! validate_keystore_credentials; then
+    return 0
+  fi
+  
+  # Check password strength
+  if ! check_password_strength "$CM_KEYSTORE_PASSWORD"; then
+    log "[WARN] Weak keystore password detected"
+    send_email_notification "warning" "Weak keystore password detected" "$BUILD_LOG_FILE"
+  fi
+  
+  if ! check_password_strength "$CM_KEY_PASSWORD"; then
+    log "[WARN] Weak key password detected"
+    send_email_notification "warning" "Weak key password detected" "$BUILD_LOG_FILE"
+  fi
+  
+  # Backup existing keystore
+  backup_file "$ANDROID_ROOT/app/keystore.jks"
+  
+  # Setup keystore path
+  local keystore_path="$ANDROID_ROOT/app/keystore.jks"
+  
+  # Check if KEYSTORE is a URL
+  if [[ "$KEY_STORE" =~ ^https?:// ]]; then
+    if ! download_keystore "$KEY_STORE" "$keystore_path"; then
+      return 0
+    fi
+  else
+    # Assume it's a local file
+    if [ -f "$KEY_STORE" ]; then
+      cp "$KEY_STORE" "$keystore_path"
+    else
+      log "[ERROR] Keystore file not found at: $KEY_STORE"
+      send_keystore_error_notification "setup_error" "Keystore file not found at: $KEY_STORE"
+      return 0
+    fi
+  fi
+  
+  # Create keystore properties file
+  local keystore_properties="$ANDROID_ROOT/keystore.properties"
+  cat > "$keystore_properties" << EOF
+storeFile=keystore.jks
+storePassword=${CM_KEYSTORE_PASSWORD}
+keyAlias=${CM_KEY_ALIAS}
+keyPassword=${CM_KEY_PASSWORD}
+EOF
+  
+  # Update build.gradle to use keystore
+  if [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
+    # Add signing configs to build.gradle
+    sed -i '' '/android {/a\
+    signingConfigs {\
+        release {\
+            storeFile file("keystore.jks")\
+            storePassword System.getenv("CM_KEYSTORE_PASSWORD")\
+            keyAlias System.getenv("CM_KEY_ALIAS")\
+            keyPassword System.getenv("CM_KEY_PASSWORD")\
+        }\
+    }' "$ANDROID_ROOT/app/build.gradle"
+    
+    # Update buildTypes to use signing config
+    sed -i '' '/buildTypes {/a\
+        release {\
+            signingConfig signingConfigs.release\
+        }' "$ANDROID_ROOT/app/build.gradle"
+  else
+    log "[ERROR] build.gradle not found"
+    send_keystore_error_notification "setup_error" "build.gradle not found"
+    return 0
+  fi
+  
+  if ! validate_keystore "$keystore_path" "$CM_KEYSTORE_PASSWORD" "$CM_KEY_ALIAS" "$CM_KEY_PASSWORD"; then
+    log "[ERROR] Invalid keystore configuration"
+    send_email_notification "failure" "Invalid keystore configuration" "$BUILD_LOG_FILE"
+    return 1
+  fi
+  
+  log "Keystore setup successful. Proceeding with Android App Codesigning."
+  return 0
+}
+
+# Replace the existing keystore setup code with the new function call
+if [ -n "${KEY_STORE:-}" ]; then
+  setup_keystore
 else
   log "KEY_STORE is not set; skipping Keystore setup."
 fi
