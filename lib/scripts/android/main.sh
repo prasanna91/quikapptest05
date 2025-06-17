@@ -250,7 +250,7 @@ validate_flutter_env
 check_flutter_version
 
 # Prepare Flutter project
-prepare_flutter_project
+#prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
 send_build_success_notification "Android" "${BUILD_URL:-}"
