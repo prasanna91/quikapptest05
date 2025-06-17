@@ -234,6 +234,14 @@ prepare_flutter_project() {
   log "Cleaning Flutter project..."
   flutter clean
   
+  # Update dependencies
+  log "Updating Flutter dependencies..."
+  flutter pub upgrade
+  
+  # Get dependencies again after upgrade
+  log "Getting Flutter dependencies after upgrade..."
+  flutter pub get
+  
   log "Flutter project preparation completed successfully"
 }
 

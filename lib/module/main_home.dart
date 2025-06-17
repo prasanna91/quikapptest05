@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'dart:io';
 
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -25,9 +24,6 @@ import '/chat/chat_widget.dart';
 import '../config/trusted_domains.dart';
 // import '../utils/icon_parser.dart';
 
-
-
-
 class MainHome extends StatefulWidget {
   final String webUrl;
   final bool isBottomMenu;
@@ -40,7 +36,19 @@ class MainHome extends StatefulWidget {
   final String iconPosition;
   final String taglineColor;
   final bool isLoadIndicator;
-  const MainHome({super.key, required this.webUrl, required this.isBottomMenu, required this.bottomMenuItems, required this.isDeeplink, required this.backgroundColor, required this.activeTabColor, required this.textColor, required this.iconColor, required this.iconPosition, required this.taglineColor, required this.isLoadIndicator});
+  const MainHome(
+      {super.key,
+      required this.webUrl,
+      required this.isBottomMenu,
+      required this.bottomMenuItems,
+      required this.isDeeplink,
+      required this.backgroundColor,
+      required this.activeTabColor,
+      required this.textColor,
+      required this.iconColor,
+      required this.iconPosition,
+      required this.taglineColor,
+      required this.isLoadIndicator});
 
   @override
   State<MainHome> createState() => _MainHomeState();
@@ -48,21 +56,23 @@ class MainHome extends StatefulWidget {
 
 class _MainHomeState extends State<MainHome> {
   final GlobalKey webViewKey = GlobalKey();
-  final String BMFont =  String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'Public Sans');
-  final double BMFontSize = double.tryParse( String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "14")) ?? 12;
-  final bool BMisBold =  bool.fromEnvironment('BOTTOMMENU_FONT_BOLD', defaultValue: false);
-  final bool BMisItalic =  bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: true);
-  final bool isChatBot =  bool.fromEnvironment('IS_CHATBOT', defaultValue: true);
+  final String BMFont =
+      String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'Public Sans');
+  final double BMFontSize = double.tryParse(
+          String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "14")) ??
+      12;
+  final bool BMisBold =
+      bool.fromEnvironment('BOTTOMMENU_FONT_BOLD', defaultValue: false);
+  final bool BMisItalic =
+      bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: true);
+  final bool isChatBot = bool.fromEnvironment('IS_CHATBOT', defaultValue: true);
   late bool isBottomMenu;
 
   // final Color taglineColor = _parseHexColor(const String.fromEnvironment('SPLASH_TAGLINE_COLOR', defaultValue: "#000000"));
   int _currentIndex = 0;
 
   InAppWebViewController? webViewController;
-  WebViewEnvironment? webViewEnvironment;
   late PullToRefreshController? pullToRefreshController;
-
-
 
   static Color _parseHexColor(String hexColor) {
     hexColor = hexColor.replaceFirst('#', '');
@@ -83,15 +93,22 @@ class _MainHomeState extends State<MainHome> {
 
   String myDomain = "";
 
-  InAppWebViewSettings settings = InAppWebViewSettings(
-    isInspectable: kDebugMode,
-    mediaPlaybackRequiresUserGesture: false,
-    allowsInlineMediaPlayback: true,
-    iframeAllow: "camera; microphone",
-    iframeAllowFullscreen: true,
+  InAppWebViewGroupOptions options = InAppWebViewGroupOptions(
+    crossPlatform: InAppWebViewOptions(
+      useShouldOverrideUrlLoading: true,
+      mediaPlaybackRequiresUserGesture: false,
+      useOnLoadResource: true,
+    ),
+    android: AndroidInAppWebViewOptions(
+      useHybridComposition: true,
+    ),
+    ios: IOSInAppWebViewOptions(
+      allowsInlineMediaPlayback: true,
+    ),
   );
 
-  Offset _dragPosition = const Offset(16, 300); // Initial position for chat toggle
+  Offset _dragPosition =
+      const Offset(16, 300); // Initial position for chat toggle
   String get InitialCurrentURL => widget.webUrl;
 
   void requestPermissions() async {
@@ -157,14 +174,12 @@ class _MainHomeState extends State<MainHome> {
 
     isBottomMenu = widget.isBottomMenu;
 
-    if (isBottomMenu == true) {
+    if (widget.bottomMenuItems.isNotEmpty) {
       try {
-        bottomMenuItems = parseBottomMenuItems(widget.bottomMenuItems);
-        // bottomMenuItems = widget.bottomMenuItems;
+        bottomMenuItems = List<Map<String, dynamic>>.from(
+            json.decode(widget.bottomMenuItems));
       } catch (e) {
-        if (kDebugMode) {
-          print("Invalid bottom menu JSON: $e");
-        }
+        print("Error parsing bottom menu items: $e");
       }
     }
 
@@ -175,33 +190,26 @@ class _MainHomeState extends State<MainHome> {
     _checkInternetConnection();
 
     if (!kIsWeb &&
-        [TargetPlatform.android, TargetPlatform.iOS].contains(defaultTargetPlatform) &&
+        [TargetPlatform.android, TargetPlatform.iOS]
+            .contains(defaultTargetPlatform) &&
         isPullDown) {
       pullToRefreshController = PullToRefreshController(
-          settings: PullToRefreshSettings(color:  _parseHexColor(widget.taglineColor)),
-          onRefresh: () async {
-            try {
-              if (defaultTargetPlatform == TargetPlatform.android) {
-                await webViewController?.reload();
-              } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-                final currentUrl = await webViewController?.getUrl();
-                if (currentUrl != null) {
-                  await webViewController?.loadUrl(
-                    urlRequest: URLRequest(url: currentUrl),
-                  );
-                }
-              }
-            } catch (e) {
-              debugPrint('❌ Refresh error: $e');
-            } finally {
-              pullToRefreshController?.endRefreshing(); // ✅ Important!
-            }
+        options: PullToRefreshOptions(
+          color: Colors.blue,
+        ),
+        onRefresh: () async {
+          if (Platform.isAndroid) {
+            webViewController?.reload();
+          } else if (Platform.isIOS) {
+            webViewController?.loadUrl(
+              urlRequest: URLRequest(url: Uri.parse(widget.webUrl)),
+            );
           }
+        },
       );
     } else {
       pullToRefreshController = null;
     }
-
 
     Uri parsedUri = Uri.parse(widget.webUrl);
     myDomain = parsedUri.host;
@@ -210,14 +218,12 @@ class _MainHomeState extends State<MainHome> {
     }
   }
 
-
-
   /// ✅ Navigation from notification
   void _handleNotificationNavigation(RemoteMessage message) {
-    final internalUrl = message.data['url'] ;
+    final internalUrl = message.data['url'];
     if (internalUrl != null && webViewController != null) {
       webViewController?.loadUrl(
-        urlRequest: URLRequest(url: WebUri(internalUrl ?? widget.webUrl)),
+        urlRequest: URLRequest(url: Uri.parse(internalUrl ?? widget.webUrl)),
       );
     }
   }
@@ -257,14 +263,12 @@ class _MainHomeState extends State<MainHome> {
         debugPrint("📲 Opened from background tap: ${message.data}");
         _handleNotificationNavigation(message);
       });
-
     } catch (e) {
       if (kDebugMode) {
         print("❌ Error during Firebase Messaging setup: $e");
       }
     }
   }
-
 
   /// ✅ Local push with optional image
   Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -324,7 +328,8 @@ class _MainHomeState extends State<MainHome> {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        attachments: imageUrl != null ? [DarwinNotificationAttachment(imageUrl)] : null,
+        attachments:
+            imageUrl != null ? [DarwinNotificationAttachment(imageUrl)] : null,
       );
 
       NotificationDetails platformDetails = NotificationDetails(
@@ -363,7 +368,8 @@ class _MainHomeState extends State<MainHome> {
     }
 
     DateTime now = DateTime.now();
-    if (_lastBackPressed == null || now.difference(_lastBackPressed!) > Duration(seconds: 2)) {
+    if (_lastBackPressed == null ||
+        now.difference(_lastBackPressed!) > Duration(seconds: 2)) {
       _lastBackPressed = now;
       Fluttertoast.showToast(
         msg: "Press back again to exit",
@@ -391,10 +397,19 @@ class _MainHomeState extends State<MainHome> {
           : _parseHexColor(widget.textColor),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onBackPressed,
+      onWillPop: () async {
+        if (webViewController != null) {
+          if (await webViewController!.canGoBack()) {
+            webViewController!.goBack();
+            return false;
+          }
+        }
+        return true;
+      },
       child: Scaffold(
         body: SafeArea(
           child: Stack(
@@ -406,7 +421,8 @@ class _MainHomeState extends State<MainHome> {
                   }
 
                   if (hasInternet == false) {
-                    return const Center(child: Text('📴 No Internet Connection'));
+                    return const Center(
+                        child: Text('📴 No Internet Connection'));
                   }
 
                   return Stack(
@@ -414,77 +430,60 @@ class _MainHomeState extends State<MainHome> {
                       if (!hasError)
                         InAppWebView(
                           key: webViewKey,
-                          webViewEnvironment: webViewEnvironment,
-                          initialUrlRequest: URLRequest(url: WebUri(widget.webUrl.isNotEmpty ? widget.webUrl : "https://pixaware.co"),),
+                          initialUrlRequest:
+                              URLRequest(url: Uri.parse(widget.webUrl)),
+                          initialOptions: options,
                           pullToRefreshController: pullToRefreshController,
                           onWebViewCreated: (controller) {
                             webViewController = controller;
-                            if (_pendingInitialUrl != null) {
-                              controller.loadUrl(
-                                urlRequest: URLRequest(url: WebUri(_pendingInitialUrl!)),
-                              );
-                              _pendingInitialUrl = null;
-                            }
                           },
-                          shouldOverrideUrlLoading: (controller, navigationAction) async {
-                            final uri = navigationAction.request.url;
-                            if (uri != null) {
-                              final urlStr = uri.toString();
+                          shouldOverrideUrlLoading:
+                              (controller, navigationAction) async {
+                            var uri = navigationAction.request.url!;
+                            var url = uri.toString();
 
-                              // Block Google reCAPTCHA
-                              if (urlStr.contains("google.com/recaptcha")) {
-                                debugPrint("Blocked reCAPTCHA URL: $urlStr");
+                            if (url.startsWith('tel:') ||
+                                url.startsWith('mailto:') ||
+                                url.startsWith('whatsapp:') ||
+                                url.startsWith('sms:')) {
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
                                 return NavigationActionPolicy.CANCEL;
                               }
-
-                              // If it's your domain OR trusted payment domain → open in app
-                              if (uri.host.contains(myDomain) || isTrustedPaymentDomain(urlStr)) {
-                                return NavigationActionPolicy.ALLOW;
-                              }
-
-                              // Otherwise open in external browser if deeplink is allowed
-                              if (widget.isDeeplink) {
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                  return NavigationActionPolicy.CANCEL;
-                                }
-                              }
-
-                              // External links blocked
-                              Fluttertoast.showToast(
-                                msg: "External links are disabled",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                              );
-                              return NavigationActionPolicy.CANCEL;
                             }
+
                             return NavigationActionPolicy.ALLOW;
                           },
                           onLoadStart: (controller, url) {
                             setState(() {
-                              isLoading = true;
-                              hasError = false;
+                              this.url = url.toString();
+                              urlController.text = this.url;
                             });
                           },
                           onLoadStop: (controller, url) async {
-                            setState(() => isLoading = false);
-                          },
-                          onLoadError: (controller, url, code, message) {
-                            debugPrint('Load error [$code]: $message');
+                            pullToRefreshController?.endRefreshing();
                             setState(() {
-                              hasError = true;
-                              isLoading = false;
+                              this.url = url.toString();
+                              urlController.text = this.url;
                             });
                           },
-                          onLoadHttpError: (controller, url, statusCode, description) {
-                            debugPrint('HTTP error [$statusCode]: $description');
+                          onProgressChanged: (controller, progress) {
+                            if (progress == 100) {
+                              pullToRefreshController?.endRefreshing();
+                            }
                             setState(() {
-                              hasError = true;
-                              isLoading = false;
+                              this.progress = progress / 100;
+                              urlController.text = this.url;
+                            });
+                          },
+                          onUpdateVisitedHistory: (controller, url, isReload) {
+                            setState(() {
+                              this.url = url.toString();
+                              urlController.text = this.url;
                             });
                           },
                           onConsoleMessage: (controller, consoleMessage) {
-                            debugPrint('Console: ${consoleMessage.message}');
+                            print("Console Message: ${consoleMessage.message}");
                           },
                         ),
 
@@ -498,7 +497,8 @@ class _MainHomeState extends State<MainHome> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                              const Icon(Icons.error_outline,
+                                  size: 64, color: Colors.red),
                               const SizedBox(height: 16),
                               const Text(
                                 "Oops! Couldn't load the App.",
@@ -512,7 +512,8 @@ class _MainHomeState extends State<MainHome> {
                                     isLoading = true;
                                   });
                                   webViewController?.loadUrl(
-                                    urlRequest: URLRequest(url: WebUri(widget.webUrl)),
+                                    urlRequest: URLRequest(
+                                        url: Uri.parse(widget.webUrl)),
                                   );
                                 },
                                 child: const Text("Retry"),
@@ -522,7 +523,9 @@ class _MainHomeState extends State<MainHome> {
                         ),
 
                       // Chat Widget
-                      if (isChatVisible && webViewController != null && isChatBot)
+                      if (isChatVisible &&
+                          webViewController != null &&
+                          isChatBot)
                         Positioned(
                           right: MediaQuery.of(context).size.width * 0.05,
                           bottom: MediaQuery.of(context).size.height * 0.05,
@@ -531,7 +534,8 @@ class _MainHomeState extends State<MainHome> {
                           child: ChatWidget(
                             webViewController: webViewController!,
                             currentUrl: InitialCurrentURL,
-                            onVisibilityChanged: (visible) => setState(() => isChatVisible = visible),
+                            onVisibilityChanged: (visible) =>
+                                setState(() => isChatVisible = visible),
                           ),
                         ),
 
@@ -559,7 +563,8 @@ class _MainHomeState extends State<MainHome> {
                             },
                             child: chatToggleButton(
                               isChatVisible,
-                              () => setState(() => isChatVisible = !isChatVisible),
+                              () => setState(
+                                  () => isChatVisible = !isChatVisible),
                             ),
                           ),
                         ),
@@ -572,10 +577,10 @@ class _MainHomeState extends State<MainHome> {
         ),
         bottomNavigationBar: isBottomMenu
             ? BottomAppBar(
-          height: 70,
-          padding: EdgeInsets.all(0),
-          clipBehavior: Clip.none,
-          notchMargin: 3.0,
+                height: 70,
+                padding: EdgeInsets.all(0),
+                clipBehavior: Clip.none,
+                notchMargin: 3.0,
                 color: _parseHexColor(widget.backgroundColor),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -584,7 +589,7 @@ class _MainHomeState extends State<MainHome> {
                     (index) {
                       final item = bottomMenuItems[index];
                       final isActive = _currentIndex == index;
-                      
+
                       return FutureBuilder<Widget>(
                         future: buildMenuIcon(
                           item,
@@ -593,9 +598,11 @@ class _MainHomeState extends State<MainHome> {
                           _parseHexColor(widget.iconColor),
                         ),
                         builder: (context, snapshot) {
-                          Widget icon = snapshot.data ?? const SizedBox(width: 24, height: 24);
-                          final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-                          
+                          Widget icon = snapshot.data ??
+                              const SizedBox(width: 24, height: 24);
+                          final label = Text(item['label'],
+                              style: _getMenuTextStyle(isActive));
+
                           Widget menuItem;
                           switch (widget.iconPosition) {
                             case 'above':
@@ -606,7 +613,11 @@ class _MainHomeState extends State<MainHome> {
                             case 'beside':
                               menuItem = Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: [icon, const SizedBox(width: 4), label],
+                                children: [
+                                  icon,
+                                  const SizedBox(width: 4),
+                                  label
+                                ],
                               );
                             case 'only_text':
                               menuItem = label;
@@ -623,12 +634,12 @@ class _MainHomeState extends State<MainHome> {
                             onTap: () {
                               setState(() {
                                 _currentIndex = index;
-                                webViewController?.loadUrl(
-                                  urlRequest: URLRequest(
-                                    url: WebUri(item['url']),
-                                  ),
-                                );
                               });
+                              webViewController?.loadUrl(
+                                urlRequest: URLRequest(
+                                  url: Uri.parse(item['url']),
+                                ),
+                              );
                             },
                             child: menuItem,
                           );
@@ -642,29 +653,33 @@ class _MainHomeState extends State<MainHome> {
       ),
     );
   }
+
   Widget chatToggleButton(bool isVisible, VoidCallback? onPressed) {
     return SizedBox(
       height: 60,
       width: 60,
-      child: isChatBot == true ?ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          shape: const CircleBorder(),
-          backgroundColor: isVisible ? Colors.red : Colors.indigo,
-          padding: const EdgeInsets.all(12),
-          elevation: 6,
-          shadowColor: Colors.black54,
-        ),
-        child: Icon(
-          isVisible ? Icons.chat : Icons.chat_bubble_outline,
-          color: Colors.white,
-          size: 25,
-        ),
-      ):null,
+      child: isChatBot == true
+          ? ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
+                backgroundColor: isVisible ? Colors.red : Colors.indigo,
+                padding: const EdgeInsets.all(12),
+                elevation: 6,
+                shadowColor: Colors.black54,
+              ),
+              child: Icon(
+                isVisible ? Icons.chat : Icons.chat_bubble_outline,
+                color: Colors.white,
+                size: 25,
+              ),
+            )
+          : null,
     );
   }
 
-  Future<Widget> buildMenuIcon(Map<String, dynamic> item, bool isActive, Color activeColor, Color defaultColor) async {
+  Future<Widget> buildMenuIcon(Map<String, dynamic> item, bool isActive,
+      Color activeColor, Color defaultColor) async {
     final iconData = item['icon'];
     if (iconData == null) return Icon(Icons.error);
 
@@ -676,7 +691,9 @@ class _MainHomeState extends State<MainHome> {
     }
 
     if (iconData['type'] == 'custom' && iconData['icon_url'] != null) {
-      final labelSanitized = (item['label'] as String).toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+      final labelSanitized = (item['label'] as String)
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s+'), '_');
       final fileName = '$labelSanitized.svg';
 
       final dir = await getApplicationSupportDirectory();
@@ -702,16 +719,76 @@ class _MainHomeState extends State<MainHome> {
         file,
         width: double.tryParse(iconData['icon_size'] ?? '24') ?? 24,
         height: double.tryParse(iconData['icon_size'] ?? '24') ?? 24,
-        colorFilter: ColorFilter.mode(isActive ? activeColor : defaultColor, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(
+            isActive ? activeColor : defaultColor, BlendMode.srcIn),
         placeholderBuilder: (_) => Icon(Icons.image_not_supported),
       );
     }
 
     return Icon(Icons.help_outline);
   }
+
+  Future<void> _handleUrl(String url) async {
+    if (url.startsWith('tel:') ||
+        url.startsWith('mailto:') ||
+        url.startsWith('whatsapp:') ||
+        url.startsWith('sms:')) {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      webViewController?.loadUrl(
+        urlRequest: URLRequest(url: Uri.parse(url)),
+      );
+    }
+  }
+
+  Future<void> _handleDeepLink(String url) async {
+    if (url.startsWith('tel:') ||
+        url.startsWith('mailto:') ||
+        url.startsWith('whatsapp:') ||
+        url.startsWith('sms:')) {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      webViewController?.loadUrl(
+        urlRequest: URLRequest(url: Uri.parse(url)),
+      );
+    }
+  }
+
+  Future<void> _handleNotificationClick(String url) async {
+    if (url.startsWith('tel:') ||
+        url.startsWith('mailto:') ||
+        url.startsWith('whatsapp:') ||
+        url.startsWith('sms:')) {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      webViewController?.loadUrl(
+        urlRequest: URLRequest(url: Uri.parse(url)),
+      );
+    }
+  }
+
+  Future<void> _handleInitialUrl() async {
+    if (_pendingInitialUrl != null) {
+      webViewController?.loadUrl(
+        urlRequest:
+            URLRequest(url: Uri.parse(_pendingInitialUrl ?? widget.webUrl)),
+      );
+      _pendingInitialUrl = null;
+    }
+  }
 }
-
-
 
 List<Map<String, dynamic>> parseBottomMenuItems(String raw) {
   try {

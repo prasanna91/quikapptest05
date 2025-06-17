@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../chat/search_result_model.dart';
 import '../chat/voice_input_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'assistant_service.dart';
 
-
-
 class SmartAssistantWidget extends StatefulWidget {
-
   final Function(bool) onVisibilityChanged;
   final String currentUrl;
 
@@ -39,6 +37,7 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
     super.initState();
     webViewController = widget.webViewController;
   }
+
   void _onSearch() async {
     final keyword = _searchController.text.trim();
     if (keyword.isEmpty) return;
@@ -49,7 +48,8 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
     });
 
     // TODO: Replace with actual deep domain parsing logic
-    final results = await AssistantService().deepSearchFromDomain(widget.currentUrl, keyword);
+    final results = await AssistantService()
+        .deepSearchFromDomain(widget.currentUrl, keyword);
 
     // final results = await AssistantService.deepSearch(widget.currentUrl, keyword);
 
@@ -69,7 +69,8 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
   void _openResultInWebView(SearchResult result) async {
     final url = result.url;
     if (url != null && widget.webViewController != null) {
-      await widget.webViewController!.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+      await widget.webViewController!
+          .loadUrl(urlRequest: URLRequest(url: Uri.parse(url)));
 
       // Optionally, scroll to a specific element if necessary
       if (result.title != null) {
@@ -83,6 +84,22 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
     }
   }
 
+  Future<void> _handleUrl(String url) async {
+    if (url.startsWith('tel:') ||
+        url.startsWith('mailto:') ||
+        url.startsWith('whatsapp:') ||
+        url.startsWith('sms:')) {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      await widget.webViewController!.loadUrl(
+        urlRequest: URLRequest(url: Uri.parse(url)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,14 +111,14 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: isFullScreen
             ? AppBar(
-          title: const Text("Smart Assistant"),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.close_fullscreen),
-              onPressed: () => setState(() => isFullScreen = false),
-            )
-          ],
-        )
+                title: const Text("Smart Assistant"),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.close_fullscreen),
+                    onPressed: () => setState(() => isFullScreen = false),
+                  )
+                ],
+              )
             : null,
         body: Column(
           children: [
@@ -123,7 +140,12 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
                     icon: const Icon(Icons.mic),
                     onPressed: () => showModalBottomSheet(
                       context: context,
-                      builder: (_) => VoiceInputCard(onResult: _onVoiceInput, recognizedText: '', onClose: () {  }, isListening: isListening,),
+                      builder: (_) => VoiceInputCard(
+                        onResult: _onVoiceInput,
+                        recognizedText: '',
+                        onClose: () {},
+                        isListening: isListening,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -133,130 +155,73 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
                 ],
               ),
             ),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator()),
+            if (isLoading) const Center(child: CircularProgressIndicator()),
             if (!isLoading)
               Expanded(
                 child: searchResults.isEmpty
                     ? Center(
-                  child: Text(
-                    _searchController.text.isEmpty
-                        ? "👋 Welcome to ${_getCleanHost(Uri.parse(widget.currentUrl))} Assistant!"
-                        : "❌ No results found for '${_searchController.text}'",
-                    style: const TextStyle(fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
-                )
+                        child: Text(
+                          _searchController.text.isEmpty
+                              ? "👋 Welcome to ${_getCleanHost(Uri.parse(widget.currentUrl))} Assistant!"
+                              : "❌ No results found for '${_searchController.text}'",
+                          style: const TextStyle(fontSize: 18),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
                     : GridView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                      childAspectRatio: 1.5
-                  ),
-                  itemCount: searchResults.length,
-                  itemBuilder: (_, index) {
-                    final result = searchResults[index];
-                    return GestureDetector(
-                      onTap: () => _openResultInWebView(result),
-                      // onTap: () async {
-                      //   try {
-                      //     final url = result.url; // Make sure this is the full page URL from result
-                      //     if (widget.webViewController != null && url.isNotEmpty) {
-                      //       await widget.webViewController.loadUrl(
-                      //         urlRequest: URLRequest(url: WebUri(url)),
-                      //       );
-                      //
-                      //       final fragment = Uri.parse(url).fragment;
-                      //       if (fragment.isNotEmpty) {
-                      //         // Wait a moment and scroll to the anchor
-                      //         Future.delayed(const Duration(seconds: 2), () {
-                      //           widget.webViewController.evaluateJavascript(
-                      //             source: """
-                      //               const el = document.getElementById('$fragment');
-                      //               if (el) {
-                      //                 el.scrollIntoView({behavior: 'smooth', block: 'center'});
-                      //                 el.style.outline = '2px dashed red';
-                      //               }
-                      //             """,
-                      //           );
-                      //         });
-                      //       }
-                      //     }
-                      //     // 3. Hide the assistant overlay
-                      //     widget.onVisibilityChanged(false);
-                      //   } catch (e) {
-                      //     print("Error loading and scrolling: $e");
-                      //   }
-                      // },
-                      // onTap: () async {
-                      //   final uri = WebUri(result.url);
-                      //   final pageUrl = '${uri.scheme}://${uri.host}${uri.path}';
-                      //   final anchorId = uri.fragment;
-                      //   // Load the base page
-                      //   await webViewController!.loadUrl(
-                      //     urlRequest: URLRequest(url: WebUri(pageUrl)),
-                      //   );
-                      //   if (webViewController == null) {
-                      //     if (kDebugMode) {
-                      //       print("WebViewController not initialized yet.");
-                      //     }
-                      //     return;
-                      //   }
-                      //
-                      //
-                      //
-                      //   // Scroll to the heading after delay
-                      //   Future.delayed(Duration(seconds: 1), () {
-                      //     webViewController?.evaluateJavascript(
-                      //       source: "document.getElementById('$anchorId')?.scrollIntoView({behavior: 'smooth', block: 'center'});",
-                      //     );
-                      //   });
-                      //   // widget.webViewController.loadUrl(
-                      //   //   urlRequest: URLRequest(url: WebUri(result.url)),
-                      //   // );
-                      //   // After a short delay (wait for content), scroll to the heading
-                      //   widget.onVisibilityChanged(false);
-                      // },
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.network(
-                                    scale: 0.7,
-                                    result.favicon,
-                                    width: 30,
-                                    height: 30,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.link),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      result.title,style: TextStyle(fontSize: 16),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
+                        padding: const EdgeInsets.all(8.0),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 1.5),
+                        itemCount: searchResults.length,
+                        itemBuilder: (_, index) {
+                          final result = searchResults[index];
+                          return GestureDetector(
+                            onTap: () => _openResultInWebView(result),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                              child: Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Image.network(
+                                          scale: 0.7,
+                                          result.favicon,
+                                          width: 30,
+                                          height: 30,
+                                          errorBuilder: (_, __, ___) =>
+                                              const Icon(Icons.link),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            result.title,
+                                            style: TextStyle(fontSize: 16),
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
           ],
         ),
@@ -267,6 +232,7 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
       ),
     );
   }
+
   String _getCleanHost(Uri uri) {
     final host = uri.host;
     return host.startsWith('www.') ? host.substring(4) : host;

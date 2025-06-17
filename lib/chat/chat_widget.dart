@@ -6,6 +6,7 @@ import 'chat_message.dart';
 import 'chat_service.dart';
 import 'dart:convert';
 import 'voice_input_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatWidget extends StatefulWidget {
   final InAppWebViewController webViewController;
@@ -150,70 +151,20 @@ class _ChatWidgetState extends State<ChatWidget> {
     }
   }
 
-  Future<void> _handleLinkTap(
-    String url, {
-    List<String>? highlightKeywords,
-  }) async {
-    try {
-      await widget.webViewController.loadUrl(
-        urlRequest: URLRequest(url: WebUri(url)),
+  Future<void> _handleUrl(String url) async {
+    if (url.startsWith('tel:') ||
+        url.startsWith('mailto:') ||
+        url.startsWith('whatsapp:') ||
+        url.startsWith('sms:')) {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      widget.webViewController.loadUrl(
+        urlRequest: URLRequest(url: Uri.parse(url)),
       );
-
-      if (highlightKeywords != null && highlightKeywords.isNotEmpty) {
-        // Add a delay to let the page load before highlighting
-        await Future.delayed(const Duration(milliseconds: 500));
-        final js =
-            '''
-          function highlightKeywords(keywords) {
-            const body = document.body;
-            const walker = document.createTreeWalker(
-              body, 
-              NodeFilter.SHOW_TEXT,
-              null,
-              false
-            );
-            
-            const matches = [];
-            let node;
-            while (node = walker.nextNode()) {
-              const text = node.textContent.toLowerCase();
-              if (keywords.some(kw => text.includes(kw.toLowerCase()))) {
-                matches.push(node);
-              }
-            }
-            
-            matches.forEach(node => {
-              const span = document.createElement('span');
-              span.className = 'keyword-highlight';
-              span.style.backgroundColor = '#FFEB3B';
-              span.style.transition = 'background-color 3s ease';
-              node.parentNode.insertBefore(span, node);
-              span.appendChild(node);
-              
-              setTimeout(() => {
-                span.style.backgroundColor = 'transparent';
-                setTimeout(() => {
-                  const parent = span.parentNode;
-                  parent.insertBefore(span.firstChild, span);
-                  parent.removeChild(span);
-                }, 3000);
-              }, 100);
-            });
-          }
-          highlightKeywords(${jsonEncode(highlightKeywords)});
-        ''';
-        await widget.webViewController.evaluateJavascript(source: js);
-      }
-
-      if (mounted) {
-        widget.onVisibilityChanged(false);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading URL: $e')));
-      }
     }
   }
 
@@ -362,9 +313,8 @@ class _ChatWidgetState extends State<ChatWidget> {
         ? Theme.of(context).primaryColor.withOpacity(0.1)
         : Colors.grey.shade100;
     final textColor = isUser ? Theme.of(context).primaryColor : Colors.black87;
-    final alignment = isUser
-        ? CrossAxisAlignment.end
-        : CrossAxisAlignment.start;
+    final alignment =
+        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -372,9 +322,8 @@ class _ChatWidgetState extends State<ChatWidget> {
         crossAxisAlignment: alignment,
         children: [
           Row(
-            mainAxisAlignment: isUser
-                ? MainAxisAlignment.end
-                : MainAxisAlignment.start,
+            mainAxisAlignment:
+                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               if (!isUser) ...[
                 CircleAvatar(
@@ -444,10 +393,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                               ),
                               const SizedBox(height: 8),
                               ElevatedButton(
-                                onPressed: () => _handleLinkTap(
-                                  result.url,
-                                  highlightKeywords: result.matchedKeywords,
-                                ),
+                                onPressed: () => _handleUrl(result.url),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Theme.of(
                                     context,
@@ -530,7 +476,7 @@ class _ChatWidgetState extends State<ChatWidget> {
               decoration: TextDecoration.underline,
             ),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => _handleLinkTap(linkMatch[2]!),
+              ..onTap = () => _handleUrl(linkMatch[2]!),
           ),
         );
 
@@ -627,9 +573,8 @@ class _ChatWidgetState extends State<ChatWidget> {
               FloatingActionButton(
                 onPressed: _startListening,
                 mini: true,
-                backgroundColor: _isListening
-                    ? Colors.red
-                    : Colors.grey.shade200,
+                backgroundColor:
+                    _isListening ? Colors.red : Colors.grey.shade200,
                 child: Icon(
                   _isListening ? Icons.mic : Icons.mic_none,
                   color: _isListening ? Colors.white : Colors.grey.shade700,
