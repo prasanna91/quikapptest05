@@ -5,20 +5,29 @@ trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
-UTILS_DIR="$SCRIPT_DIR/../utils"
+UTILS_DIR="$PROJECT_ROOT/lib/scripts/utils"
+
+# Log the paths for debugging
+echo "SCRIPT_DIR: $SCRIPT_DIR"
+echo "PROJECT_ROOT: $PROJECT_ROOT"
+echo "UTILS_DIR: $UTILS_DIR"
 
 # Source common variables and utilities
 if [ -f "$UTILS_DIR/variables.sh" ]; then
+  echo "Found variables.sh at $UTILS_DIR/variables.sh"
   source "$UTILS_DIR/variables.sh"
 else
   echo "Error: variables.sh not found at $UTILS_DIR/variables.sh"
+  ls -la "$UTILS_DIR"
   exit 1
 fi
 
 if [ -f "$UTILS_DIR/notifications.sh" ]; then
+  echo "Found notifications.sh at $UTILS_DIR/notifications.sh"
   source "$UTILS_DIR/notifications.sh"
 else
   echo "Error: notifications.sh not found at $UTILS_DIR/notifications.sh"
+  ls -la "$UTILS_DIR"
   exit 1
 fi
 
