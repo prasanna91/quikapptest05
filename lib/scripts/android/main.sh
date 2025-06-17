@@ -248,7 +248,8 @@ prepare_flutter_project() {
   
   # Update version in pubspec.yaml
   log "Updating version in pubspec.yaml..."
-  sed -i.bak "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" "$PROJECT_ROOT/pubspec.yaml"
+  local version_string="${VERSION_NAME}+${VERSION_CODE}"
+  sed -i.bak "s/^version: .*/version: $version_string/" "$PROJECT_ROOT/pubspec.yaml"
   rm -f "$PROJECT_ROOT/pubspec.yaml.bak"
   
   # Get dependencies
@@ -554,7 +555,7 @@ if [ -n "${PKG_NAME:-}" ]; then
     mv "$OLD_MAIN_ACTIVITY_PATH" "$NEW_MAIN_ACTIVITY_FILE" || true
 
     # Update package declaration in MainActivity.kt
-    sed -i '' "s/package $OLD_PACKAGE_IN_FILE/package $PKG_NAME/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+    sed -i '' "s/package ${OLD_PACKAGE_IN_FILE}/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
 
     log "Updated package name in MainActivity.kt and moved to new directory."
   else
