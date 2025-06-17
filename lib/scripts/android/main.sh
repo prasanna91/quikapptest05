@@ -9,6 +9,7 @@ log() {
 
 # Source common variables with defaults
 source lib/scripts/utils/variables.sh
+source lib/scripts/utils/notifications.sh
 
 # Source local environment variables if available (for local development/testing)
 # These will override defaults from variables.sh
@@ -148,179 +149,10 @@ log "  CM_KEY_ALIAS: ${CM_KEY_ALIAS:-[NOT SET]}"
 log "  CM_KEY_PASSWORD: ${CM_KEY_PASSWORD:-[NOT SET]}"
 log "=== End Environment Variables Debug ==="
 
-log "Starting Android build workflow..."
-
-# Function to send email notification
-send_notification() {
-  local status=$1
-  local message=$2
-  local logs_url=$3
-  
-  # Get build info from environment variables
-  local build_number=${BUILD_NUMBER:-"unknown"}
-  local build_id=${BUILD_ID:-"unknown"}
-  local project_name=${PROJECT_NAME:-"Flutter Project"}
-  
-  # Format email subject
-  local subject="[${status}] ${project_name} Build #${build_number}"
-  
-  # Format email body
-  local body="
-Build Status: ${status}
-Project: ${project_name}
-Build Number: ${build_number}
-Build ID: ${build_id}
-
-${message}
-
-View build logs: ${logs_url}
-"
-  
-  # Send email using mail command if available
-  if command -v mail &> /dev/null; then
-    echo "${body}" | mail -s "${subject}" "${NOTIFICATION_EMAIL:-}"
-  else
-    log "[WARN] mail command not available. Skipping email notification."
-    log "Would have sent:"
-    log "Subject: ${subject}"
-    log "Body: ${body}"
-  fi
-}
-
-# Function to install specific Flutter version
-install_flutter_version() {
-  local version=$1
-  log "Installing Flutter version $version..."
-  
-  # Create Flutter directory if it doesn't exist
-  local flutter_dir="$HOME/flutter"
-  mkdir -p "$flutter_dir"
-  
-  # Download Flutter SDK
-  log "Downloading Flutter SDK version $version..."
-  if curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_$version-stable.zip" -o flutter.zip; then
-    log "Download successful, extracting..."
-    unzip -o flutter.zip -d "$HOME"
-    rm flutter.zip
-    
-    # Add Flutter to PATH
-    export PATH="$flutter_dir/bin:$PATH"
-    
-    # Run Flutter doctor to ensure everything is set up
-    log "Running Flutter doctor..."
-    flutter doctor -v
-    
-    # Verify installation
-    if flutter --version | grep -q "Flutter $version"; then
-      log "Successfully installed Flutter version $version"
-      
-      # Accept Android licenses
-      log "Accepting Android licenses..."
-      yes | flutter doctor --android-licenses
-      
-      # Pre-download Android SDK components
-      log "Pre-downloading Android SDK components..."
-      flutter precache --android
-      
-      return 0
-    else
-      log "[ERROR] Flutter version verification failed after installation"
-      return 1
-    fi
-  else
-    log "[ERROR] Failed to download Flutter SDK version $version"
-    return 1
-  fi
-}
-
-# Function to validate Flutter environment
-validate_flutter_env() {
-  log "Validating Flutter environment..."
-  
-  # Check Flutter installation
-  if ! command -v flutter &> /dev/null; then
-    log "[ERROR] Flutter is not installed or not in PATH"
-    send_notification "FAILED" "Flutter is not installed or not in PATH" "${BUILD_URL:-}"
-    exit 1
-  fi
-
-  # Check Flutter doctor
-  log "Running Flutter doctor..."
-  if ! flutter doctor -v; then
-    log "[ERROR] Flutter doctor reported issues. Please fix them before proceeding."
-    send_notification "FAILED" "Flutter doctor reported issues" "${BUILD_URL:-}"
-    exit 1
-  fi
-
-  # Check Android toolchain
-  if ! flutter doctor --android-licenses; then
-    log "[WARN] Android licenses not accepted. Attempting to accept..."
-    yes | flutter doctor --android-licenses || {
-      log "[ERROR] Failed to accept Android licenses"
-      send_notification "FAILED" "Failed to accept Android licenses" "${BUILD_URL:-}"
-      exit 1
-    }
-  fi
-}
-
-# Function to check and set Flutter version
-check_flutter_version() {
-  log "Checking Flutter version..."
-  
-  # Get current Flutter version
-  CURRENT_FLUTTER_VERSION=$(flutter --version | grep -o "Flutter [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
-  log "Current Flutter version: $CURRENT_FLUTTER_VERSION"
-  
-  # Get current Dart version
-  CURRENT_DART_VERSION=$(flutter --version | grep -o "Dart [0-9]\+\.[0-9]\+\.[0-9]\+" | cut -d' ' -f2)
-  log "Current Dart version: $CURRENT_DART_VERSION"
-  
-  # Skip version checking and use Flutter 3.22.1
-  log "Using Flutter 3.22.1 as specified in codemagic.yaml"
-}
-
-# Function to clean and prepare Flutter project
-prepare_flutter_project() {
-  log "Preparing Flutter project..."
-  
-  # Clean Flutter
-  log "Cleaning Flutter project..."
-  flutter clean || {
-    log "[ERROR] Failed to clean Flutter project"
-    send_notification "FAILED" "Failed to clean Flutter project" "${BUILD_URL:-}"
-    exit 1
-  }
-  
-  # Delete build directory if it exists
-  if [ -d "build" ]; then
-    log "Removing build directory..."
-    rm -rf build
-  fi
-  
-  # Delete .dart_tool directory if it exists
-  if [ -d ".dart_tool" ]; then
-    log "Removing .dart_tool directory..."
-    rm -rf .dart_tool
-  fi
-  
-  # Get dependencies
-  log "Getting Flutter dependencies..."
-  flutter pub get || {
-    log "[ERROR] Failed to get Flutter dependencies"
-    send_notification "FAILED" "Failed to get Flutter dependencies" "${BUILD_URL:-}"
-    exit 1
-  }
-  
-  # Verify pub get was successful
-  if [ ! -f ".packages" ]; then
-    log "[ERROR] .packages file not found after flutter pub get"
-    send_notification "FAILED" ".packages file not found after flutter pub get" "${BUILD_URL:-}"
-    exit 1
-  fi
-}
-
-# Main setup sequence
 log "Starting Flutter environment setup..."
+
+# Send build start notification
+send_build_start_notification "Android"
 
 # Validate Flutter environment
 validate_flutter_env
@@ -332,7 +164,7 @@ check_flutter_version
 prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
-send_notification "SUCCESS" "Flutter environment setup completed successfully" "${BUILD_URL:-}"
+send_build_success_notification "Android" "${BUILD_URL:-}"
 
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow

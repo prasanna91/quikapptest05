@@ -2,7 +2,7 @@ workflows:
   android-free:
     name: Android-Free
     environment:
-      flutter: 3.22.1
+      flutter: 3.32.2
       vars:
         PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
@@ -64,6 +64,11 @@ workflows:
         NOTIFICATION_EMAIL: "${EMAIL_ID}"
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
+        # SMTP Configuration
+        SMTP_SERVER: "smtp.gmail.com"
+        SMTP_PORT: "587"
+        SMTP_USER: "prasannasrie@gmail.com"
+        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - name: Install FVM
         script: |
@@ -139,6 +144,11 @@ workflows:
         NOTIFICATION_EMAIL: "${EMAIL_ID}"
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
+        # SMTP Configuration
+        SMTP_SERVER: "smtp.gmail.com"
+        SMTP_PORT: "587"
+        SMTP_USER: "prasannasrie@gmail.com"
+        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - name: Install FVM
         script: |
@@ -213,6 +223,11 @@ workflows:
         NOTIFICATION_EMAIL: "${EMAIL_ID}"
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
+        # SMTP Configuration
+        SMTP_SERVER: "smtp.gmail.com"
+        SMTP_PORT: "587"
+        SMTP_USER: "prasannasrie@gmail.com"
+        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - name: Install FVM
         script: |
@@ -284,6 +299,11 @@ workflows:
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
+        # SMTP Configuration
+        SMTP_SERVER: "smtp.gmail.com"
+        SMTP_PORT: "587"
+        SMTP_USER: "prasannasrie@gmail.com"
+        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - bash lib/scripts/ios/main.sh
     artifacts:
@@ -350,6 +370,11 @@ workflows:
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
+        # SMTP Configuration
+        SMTP_SERVER: "smtp.gmail.com"
+        SMTP_PORT: "587"
+        SMTP_USER: "prasannasrie@gmail.com"
+        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - bash lib/scripts/combined/main.sh
     artifacts:
