@@ -4,7 +4,6 @@ workflows:
     environment:
       flutter: 3.32.2
       vars:
-        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
@@ -13,7 +12,7 @@ workflows:
         PKG_NAME: "${PKG_NAME}"
         BUNDLE_ID: "${BUNDLE_ID}"
         EMAIL_ID: "${EMAIL_ID}"
-        PUSH_NOTIFY: "${PUSH_NOTIFY}"
+        PUSH_NOTIFY: "false"
         IS_CHATBOT: "${IS_CHATBOT}"
         IS_DEEPLINK: "${IS_DEEPLINK}"
         IS_SPLASH: "${IS_SPLASH}"
@@ -29,7 +28,7 @@ workflows:
         IS_CALENDAR: "${IS_CALENDAR}"
         IS_STORAGE: "${IS_STORAGE}"
         LOGO_URL: "${LOGO_URL}"
-        SPLASH: "${SPLASH}"
+        SPLASH_URL: "${SPLASH_URL}"
         SPLASH_BG: "${SPLASH_BG}"
         SPLASH_BG_COLOR: "${SPLASH_BG_COLOR}"
         SPLASH_TAGLINE: "${SPLASH_TAGLINE}"
@@ -47,28 +46,6 @@ workflows:
         BOTTOMMENU_ACTIVE_TAB_COLOR: "${BOTTOMMENU_ACTIVE_TAB_COLOR}"
         BOTTOMMENU_ICON_POSITION: "${BOTTOMMENU_ICON_POSITION}"
         BOTTOMMENU_VISIBLE_ON: "${BOTTOMMENU_VISIBLE_ON}"
-        firebase_config_android: "${firebase_config_android}"
-        firebase_config_ios: "${firebase_config_ios}"
-        APPLE_TEAM_ID: "${APPLE_TEAM_ID}"
-        APNS_KEY_ID: "${APNS_KEY_ID}"
-        APNS_AUTH_KEY_URL: "${APNS_AUTH_KEY_URL}"
-        CERT_PASSWORD: "${CERT_PASSWORD}"
-        PROFILE_URL: "${PROFILE_URL}"
-        CERT_CER_URL: "${CERT_CER_URL}"
-        CERT_KEY_URL: "${CERT_KEY_URL}"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "${APP_STORE_CONNECT_KEY_IDENTIFIER}"
-        KEY_STORE: "${KEY_STORE}"
-        CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
-        CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
-        CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
-        NOTIFICATION_EMAIL: "${EMAIL_ID}"
-        PROJECT_NAME: "${APP_NAME}"
-        BUILD_URL: $CM_BUILD_URL
-        # SMTP Configuration
-        SMTP_SERVER: "smtp.gmail.com"
-        SMTP_PORT: "587"
-        SMTP_USER: "prasannasrie@gmail.com"
-        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - name: Install FVM
         script: |
@@ -77,14 +54,12 @@ workflows:
       - bash lib/scripts/android/main.sh
     artifacts:
       - output/android/*.apk
-    # notification: see email script
 
   android-paid:
     name: Android-Paid
     environment:
       flutter: 3.32.2
       vars:
-        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
@@ -93,7 +68,7 @@ workflows:
         PKG_NAME: "${PKG_NAME}"
         BUNDLE_ID: "${BUNDLE_ID}"
         EMAIL_ID: "${EMAIL_ID}"
-        PUSH_NOTIFY: "${PUSH_NOTIFY}"
+        PUSH_NOTIFY: "true"
         IS_CHATBOT: "${IS_CHATBOT}"
         IS_DEEPLINK: "${IS_DEEPLINK}"
         IS_SPLASH: "${IS_SPLASH}"
@@ -109,7 +84,7 @@ workflows:
         IS_CALENDAR: "${IS_CALENDAR}"
         IS_STORAGE: "${IS_STORAGE}"
         LOGO_URL: "${LOGO_URL}"
-        SPLASH: "${SPLASH}"
+        SPLASH_URL: "${SPLASH_URL}"
         SPLASH_BG: "${SPLASH_BG}"
         SPLASH_BG_COLOR: "${SPLASH_BG_COLOR}"
         SPLASH_TAGLINE: "${SPLASH_TAGLINE}"
@@ -128,27 +103,6 @@ workflows:
         BOTTOMMENU_ICON_POSITION: "${BOTTOMMENU_ICON_POSITION}"
         BOTTOMMENU_VISIBLE_ON: "${BOTTOMMENU_VISIBLE_ON}"
         firebase_config_android: "${firebase_config_android}"
-        firebase_config_ios: "${firebase_config_ios}"
-        APPLE_TEAM_ID: "${APPLE_TEAM_ID}"
-        APNS_KEY_ID: "${APNS_KEY_ID}"
-        APNS_AUTH_KEY_URL: "${APNS_AUTH_KEY_URL}"
-        CERT_PASSWORD: "${CERT_PASSWORD}"
-        PROFILE_URL: "${PROFILE_URL}"
-        CERT_CER_URL: "${CERT_CER_URL}"
-        CERT_KEY_URL: "${CERT_KEY_URL}"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "${APP_STORE_CONNECT_KEY_IDENTIFIER}"
-        KEY_STORE: "${KEY_STORE}"
-        CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
-        CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
-        CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
-        NOTIFICATION_EMAIL: "${EMAIL_ID}"
-        PROJECT_NAME: "${APP_NAME}"
-        BUILD_URL: $CM_BUILD_URL
-        # SMTP Configuration
-        SMTP_SERVER: "smtp.gmail.com"
-        SMTP_PORT: "587"
-        SMTP_USER: "prasannasrie@gmail.com"
-        SMTP_PASS: "jbbf nzhm zoay lbwb"
     scripts:
       - name: Install FVM
         script: |
@@ -163,7 +117,6 @@ workflows:
     environment:
       flutter: 3.32.2
       vars:
-        PATH: "$PATH:$HOME/flutter/bin"
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
         APP_NAME: "${APP_NAME}"
@@ -172,7 +125,7 @@ workflows:
         PKG_NAME: "${PKG_NAME}"
         BUNDLE_ID: "${BUNDLE_ID}"
         EMAIL_ID: "${EMAIL_ID}"
-        PUSH_NOTIFY: "${PUSH_NOTIFY}"
+        PUSH_NOTIFY: "true"
         IS_CHATBOT: "${IS_CHATBOT}"
         IS_DEEPLINK: "${IS_DEEPLINK}"
         IS_SPLASH: "${IS_SPLASH}"
@@ -188,7 +141,7 @@ workflows:
         IS_CALENDAR: "${IS_CALENDAR}"
         IS_STORAGE: "${IS_STORAGE}"
         LOGO_URL: "${LOGO_URL}"
-        SPLASH: "${SPLASH}"
+        SPLASH_URL: "${SPLASH_URL}"
         SPLASH_BG: "${SPLASH_BG}"
         SPLASH_BG_COLOR: "${SPLASH_BG_COLOR}"
         SPLASH_TAGLINE: "${SPLASH_TAGLINE}"
@@ -207,27 +160,71 @@ workflows:
         BOTTOMMENU_ICON_POSITION: "${BOTTOMMENU_ICON_POSITION}"
         BOTTOMMENU_VISIBLE_ON: "${BOTTOMMENU_VISIBLE_ON}"
         firebase_config_android: "${firebase_config_android}"
-        firebase_config_ios: "${firebase_config_ios}"
-        APPLE_TEAM_ID: "${APPLE_TEAM_ID}"
-        APNS_KEY_ID: "${APNS_KEY_ID}"
-        APNS_AUTH_KEY_URL: "${APNS_AUTH_KEY_URL}"
-        CERT_PASSWORD: "${CERT_PASSWORD}"
-        PROFILE_URL: "${PROFILE_URL}"
-        CERT_CER_URL: "${CERT_CER_URL}"
-        CERT_KEY_URL: "${CERT_KEY_URL}"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "${APP_STORE_CONNECT_KEY_IDENTIFIER}"
         KEY_STORE: "${KEY_STORE}"
         CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
         CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
         CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
-        NOTIFICATION_EMAIL: "${EMAIL_ID}"
-        PROJECT_NAME: "${APP_NAME}"
-        BUILD_URL: $CM_BUILD_URL
-        # SMTP Configuration
-        SMTP_SERVER: "smtp.gmail.com"
-        SMTP_PORT: "587"
-        SMTP_USER: "prasannasrie@gmail.com"
-        SMTP_PASS: "jbbf nzhm zoay lbwb"
+    scripts:
+      - name: Install FVM
+        script: |
+          dart pub global activate fvm
+          export PATH="$PATH":"$HOME/.pub-cache/bin"
+      - bash lib/scripts/android/main.sh
+    artifacts:
+      - output/android/*.apk
+      - output/android/*.aab
+
+  android-publish-no-push:
+    name: Android-Publish (No Push)
+    environment:
+      flutter: 3.32.2
+      vars:
+        VERSION_NAME: "${VERSION_NAME}"
+        VERSION_CODE: "${VERSION_CODE}"
+        APP_NAME: "${APP_NAME}"
+        ORG_NAME: "${ORG_NAME}"
+        WEB_URL: "${WEB_URL}"
+        PKG_NAME: "${PKG_NAME}"
+        BUNDLE_ID: "${BUNDLE_ID}"
+        EMAIL_ID: "${EMAIL_ID}"
+        PUSH_NOTIFY: "false"
+        IS_CHATBOT: "${IS_CHATBOT}"
+        IS_DEEPLINK: "${IS_DEEPLINK}"
+        IS_SPLASH: "${IS_SPLASH}"
+        IS_PULLDOWN: "${IS_PULLDOWN}"
+        IS_BOTTOMMENU: "${IS_BOTTOMMENU}"
+        IS_LOAD_IND: "${IS_LOAD_IND}"
+        IS_CAMERA: "${IS_CAMERA}"
+        IS_LOCATION: "${IS_LOCATION}"
+        IS_MIC: "${IS_MIC}"
+        IS_NOTIFICATION: "${IS_NOTIFICATION}"
+        IS_CONTACT: "${IS_CONTACT}"
+        IS_BIOMETRIC: "${IS_BIOMETRIC}"
+        IS_CALENDAR: "${IS_CALENDAR}"
+        IS_STORAGE: "${IS_STORAGE}"
+        LOGO_URL: "${LOGO_URL}"
+        SPLASH_URL: "${SPLASH_URL}"
+        SPLASH_BG: "${SPLASH_BG}"
+        SPLASH_BG_COLOR: "${SPLASH_BG_COLOR}"
+        SPLASH_TAGLINE: "${SPLASH_TAGLINE}"
+        SPLASH_TAGLINE_COLOR: "${SPLASH_TAGLINE_COLOR}"
+        SPLASH_ANIMATION: "${SPLASH_ANIMATION}"
+        SPLASH_DURATION: "${SPLASH_DURATION}"
+        BOTTOMMENU_ITEMS: "${BOTTOMMENU_ITEMS}"
+        BOTTOMMENU_BG_COLOR: "${BOTTOMMENU_BG_COLOR}"
+        BOTTOMMENU_ICON_COLOR: "${BOTTOMMENU_ICON_COLOR}"
+        BOTTOMMENU_TEXT_COLOR: "${BOTTOMMENU_TEXT_COLOR}"
+        BOTTOMMENU_FONT: "${BOTTOMMENU_FONT}"
+        BOTTOMMENU_FONT_SIZE: "${BOTTOMMENU_FONT_SIZE}"
+        BOTTOMMENU_FONT_BOLD: "${BOTTOMMENU_FONT_BOLD}"
+        BOTTOMMENU_FONT_ITALIC: "${BOTTOMMENU_FONT_ITALIC}"
+        BOTTOMMENU_ACTIVE_TAB_COLOR: "${BOTTOMMENU_ACTIVE_TAB_COLOR}"
+        BOTTOMMENU_ICON_POSITION: "${BOTTOMMENU_ICON_POSITION}"
+        BOTTOMMENU_VISIBLE_ON: "${BOTTOMMENU_VISIBLE_ON}"
+        KEY_STORE: "${KEY_STORE}"
+        CM_KEYSTORE_PASSWORD: "${CM_KEYSTORE_PASSWORD}"
+        CM_KEY_ALIAS: "${CM_KEY_ALIAS}"
+        CM_KEY_PASSWORD: "${CM_KEY_PASSWORD}"
     scripts:
       - name: Install FVM
         script: |
