@@ -134,7 +134,7 @@ send_email_notification() {
 
 # Generate environment.dart
 generate_environment_dart() {
-    cat > lib/config/environment.dart << EOF
+    cat > lib/config/environment.dart << 'EOF'
 class Environment {
   static const String versionName = '${VERSION_NAME}';
   static const String versionCode = '${VERSION_CODE}';
@@ -184,7 +184,7 @@ EOF
 
 # Function to generate AndroidManifest.xml
 generate_android_manifest() {
-    cat > android/app/src/main/AndroidManifest.xml << EOF
+    cat > android/app/src/main/AndroidManifest.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -270,7 +270,7 @@ EOF
 
 # Function to generate build.gradle
 generate_build_gradle() {
-    cat > android/app/build.gradle << EOF
+    cat > android/app/build.gradle << 'EOF'
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -358,7 +358,7 @@ EOF
 
 # Function to generate pubspec.yaml
 generate_pubspec_yaml() {
-    cat > pubspec.yaml << EOF
+    cat > pubspec.yaml << 'EOF'
 name: quikapp
 description: "A new Flutter project."
 publish_to: 'none'
