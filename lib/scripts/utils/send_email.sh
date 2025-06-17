@@ -20,30 +20,36 @@ SUBJECT="[$APP_NAME] $WORKFLOW Build $STATUS"
 
 # HTML Email Template
 EMAIL_BODY=$(cat <<'EOF'
+<!DOCTYPE html>
 <html>
-  <body style='font-family: "Inter", Arial, sans-serif; background: #f8fafc; color: #222;'>
-    <div style='max-width: 480px; margin: 32px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px;'>
-      <h2 style='margin: 0 0 8px 0; color: #1a56db;'>%s</h2>
-      <div style='margin-bottom: 8px; font-size: 1.1em;'>Workflow: <b>%s</b></div>
-      <div style='margin-bottom: 8px;'>Date: <b>%s</b></div>
-      <div style='margin-bottom: 16px;'>Status: <span style='background: #e0fbe0; color: #1a7f37; border-radius: 6px; padding: 2px 10px; font-weight: bold;'>%s</span></div>
-      <div style='margin-bottom: 16px;'>Artifacts:</div>
-      <ul style='list-style: none; padding: 0;'>
-        %s
-        %s
-        %s
-      </ul>
-      <div style='margin: 24px 0;'>
-        <a href="%s" style='background:#1a56db; color:#fff; border-radius:6px; padding:8px 18px; text-decoration:none; margin-right:12px;'>▶️ Resume Build</a>
-        <a href="%s" style='background:#f1f5f9; color:#222; border-radius:6px; padding:8px 18px; text-decoration:none;'>📄 View Logs</a>
-      </div>
-      <div style='font-size:0.95em; color:#888;'>Styled by QuikApp Portal UI • quikapp.co</div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>%s</title>
+</head>
+<body style='font-family: "Inter", Arial, sans-serif; background: #f8fafc; color: #222;'>
+  <div style='max-width: 480px; margin: 32px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px;'>
+    <h2 style='margin: 0 0 8px 0; color: #1a56db;'>%s</h2>
+    <div style='margin-bottom: 8px; font-size: 1.1em;'>Workflow: <b>%s</b></div>
+    <div style='margin-bottom: 8px;'>Date: <b>%s</b></div>
+    <div style='margin-bottom: 16px;'>Status: <span style='background: #e0fbe0; color: #1a7f37; border-radius: 6px; padding: 2px 10px; font-weight: bold;'>%s</span></div>
+    <div style='margin-bottom: 16px;'>Artifacts:</div>
+    <ul style='list-style: none; padding: 0;'>
+      %s
+      %s
+      %s
+    </ul>
+    <div style='margin: 24px 0;'>
+      <a href="%s" style='background:#1a56db; color:#fff; border-radius:6px; padding:8px 18px; text-decoration:none; margin-right:12px;'>▶️ Resume Build</a>
+      <a href="%s" style='background:#f1f5f9; color:#222; border-radius:6px; padding:8px 18px; text-decoration:none;'>📄 View Logs</a>
     </div>
-  </body>
+    <div style='font-size:0.95em; color:#888;'>Styled by QuikApp Portal UI • quikapp.co</div>
+  </div>
+</body>
 </html>
 EOF
 )
-EMAIL_BODY=$(printf "$EMAIL_BODY" "$APP_NAME" "$WORKFLOW" "$DATE" "$STATUS" \
+EMAIL_BODY=$(printf "$EMAIL_BODY" "$SUBJECT" "$APP_NAME" "$WORKFLOW" "$DATE" "$STATUS" \
   "${APK_URL:+<li><a href=\"$APK_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download APK</span></a></li>}" \
   "${AAB_URL:+<li><a href=\"$AAB_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download AAB</span></a></li>}" \
   "${IPA_URL:+<li><a href=\"$IPA_URL\" style='text-decoration:none;'><span style='background:#e0eaff; color:#1a56db; border-radius:5px; padding:4px 12px;'>🔗 Download IPA</span></a></li>}" \
@@ -84,7 +90,25 @@ EOF
   exit $?
 fi
 
-# Send email (using mailx or sendmail)
+# Send email using curl with SMTP
+if command -v curl &> /dev/null; then
+  echo "Sending email notification using SMTP..."
+  curl --url "smtp://${SMTP_SERVER}:${SMTP_PORT}" \
+       --mail-from "${SMTP_USER}" \
+       --mail-rcpt "${EMAIL_TO}" \
+       --ssl-reqd \
+       --user "${SMTP_USER}:${SMTP_PASS}" \
+       -H "Subject: $SUBJECT" \
+       -H "From: $EMAIL_FROM" \
+       -H "To: $EMAIL_TO" \
+       -H "MIME-Version: 1.0" \
+       -H "Content-Type: text/html; charset=UTF-8" \
+       --data-binary "$EMAIL_BODY" \
+       --verbose || echo "[WARN] Failed to send email notification"
+  exit $?
+fi
+
+# Fallback to mailx or sendmail
 if command -v mailx >/dev/null 2>&1; then
   # BSD mailx does not support -r or -S flags; cannot set sender or content-type
   echo "$EMAIL_BODY" | mailx -s "$SUBJECT" "$EMAIL_TO"
