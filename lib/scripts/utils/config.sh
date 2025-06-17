@@ -83,8 +83,8 @@ export APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER:-""}
 # SMTP Configuration
 export SMTP_SERVER=${SMTP_SERVER:-"smtp.gmail.com"}
 export SMTP_PORT=${SMTP_PORT:-"587"}
-export SMTP_USER=${SMTP_USER:-""}
-export SMTP_PASS=${SMTP_PASS:-""}
+export SMTP_USER=${SMTP_USER:-"prasannasrie@gmail.com"}
+export SMTP_PASS=${SMTP_PASS:-"jbbf nzhm zoay lbwb"}
 
 # Project paths
 export PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../.." && pwd )"
