@@ -239,6 +239,19 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Function to run command with timeout (fallback for systems without timeout)
+run_with_timeout() {
+  local timeout_duration=$1
+  shift
+  
+  if command_exists timeout; then
+    timeout "$timeout_duration" "$@"
+  else
+    # Fallback: just run the command without timeout
+    "$@"
+  fi
+}
+
 # Function to validate Flutter environment
 validate_flutter_env() {
   log "Validating Flutter environment..."
@@ -249,35 +262,49 @@ validate_flutter_env() {
     exit 1
   fi
   
-  # Check Flutter version and basic functionality
+  # Check Flutter version and basic functionality with retries
   local flutter_version
-  if flutter_version=$(flutter --version 2>/dev/null | head -1); then
-    log "Flutter version info: $flutter_version"
-  else
-    log "[ERROR] Failed to get Flutter version"
-    exit 1
+  local retry_count=0
+  local max_retries=3
+  
+  while [ $retry_count -lt $max_retries ]; do
+    if flutter_version=$(run_with_timeout 30 flutter --version 2>/dev/null | head -1); then
+      log "Flutter version info: $flutter_version"
+      break
+    else
+      retry_count=$((retry_count + 1))
+      log "[WARN] Flutter version check attempt $retry_count failed, retrying..."
+      sleep 2
+    fi
+  done
+  
+  if [ $retry_count -eq $max_retries ]; then
+    log "[ERROR] Failed to get Flutter version after $max_retries attempts"
+    # Try a simpler check
+    if flutter --help >/dev/null 2>&1; then
+      log "[INFO] Flutter command works, but version check failed. Continuing..."
+    else
+      log "[ERROR] Flutter command is not working at all"
+      exit 1
+    fi
   fi
   
+  # Test basic Flutter functionality (don't fail if these don't work)
+  log "Testing Flutter basic functionality..."
+  
   # Test that Flutter can list devices (basic functionality test)
-  if flutter devices --machine >/dev/null 2>&1; then
+  if run_with_timeout 15 flutter devices --machine >/dev/null 2>&1; then
     log "Flutter devices command works correctly"
   else
     log "[WARN] Flutter devices command failed, but continuing..."
   fi
   
-  # Test that Flutter can analyze basic project structure
-  if flutter analyze --no-pub >/dev/null 2>&1; then
-    log "Flutter analyze works correctly"
-  else
-    log "[WARN] Flutter analyze failed, but continuing..."
-  fi
-  
   # Run flutter doctor but don't fail on warnings (common in CI)
   log "Running flutter doctor (informational only)..."
-  if flutter doctor --version >/dev/null 2>&1; then
-    flutter doctor || log "[INFO] Flutter doctor reported some issues, but continuing build..."
+  if run_with_timeout 30 flutter doctor >/dev/null 2>&1; then
+    log "[INFO] Flutter doctor completed"
   else
-    log "[INFO] Flutter doctor not available or failed, but continuing build..."
+    log "[INFO] Flutter doctor failed or timed out, but continuing build..."
   fi
   
   log "Flutter environment validation completed successfully"

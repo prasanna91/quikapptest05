@@ -9,14 +9,14 @@ else
 fi
 
 # Default environment variables
-export VERSION_NAME=${VERSION_NAME:-"1.0.0"}
-export VERSION_CODE=${VERSION_CODE:-"1"}
-export APP_NAME=${APP_NAME:-"QuikApp"}
-export PKG_NAME=${PKG_NAME:-"com.quikapp.app"}
-export BUNDLE_ID=${BUNDLE_ID:-"com.quikapp.app"}
-export ORG_NAME=${ORG_NAME:-"QuikApp"}
-export WEB_URL=${WEB_URL:-"https://quikapp.co"}
-export EMAIL_ID=${EMAIL_ID:-"support@quikapp.co"}
+export VERSION_NAME=${VERSION_NAME:-"1.0.22"}
+export VERSION_CODE=${VERSION_CODE:-"27"}
+export APP_NAME=${APP_NAME:-"Garbcode App"}
+export PKG_NAME=${PKG_NAME:-"com.garbcode.garbcodeapp"}
+export BUNDLE_ID=${BUNDLE_ID:-"com.garbcode.garbcodeapp"}
+export ORG_NAME=${ORG_NAME:-"Garbcode Apparels Private Limited"}
+export WEB_URL=${WEB_URL:-"https://garbcode.com/"}
+export EMAIL_ID=${EMAIL_ID:-"prasannasrinivasan32@gmail.com"}
 
 # Feature flags
 export PUSH_NOTIFY=${PUSH_NOTIFY:-"false"}
@@ -38,14 +38,14 @@ export IS_CALENDAR=${IS_CALENDAR:-"false"}
 export IS_STORAGE=${IS_STORAGE:-"false"}
 
 # UI/Branding
-export LOGO_URL=${LOGO_URL:-""}
-export SPLASH_URL=${SPLASH_URL:-""}
+export LOGO_URL=${LOGO_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png"}
+export SPLASH_URL=${SPLASH_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png"}
 export SPLASH_BG=${SPLASH_BG:-""}
-export SPLASH_BG_COLOR=${SPLASH_BG_COLOR:-"#FFFFFF"}
-export SPLASH_TAGLINE=${SPLASH_TAGLINE:-""}
-export SPLASH_TAGLINE_COLOR=${SPLASH_TAGLINE_COLOR:-"#000000"}
-export SPLASH_ANIMATION=${SPLASH_ANIMATION:-"fade"}
-export SPLASH_DURATION=${SPLASH_DURATION:-"3"}
+export SPLASH_BG_COLOR=${SPLASH_BG_COLOR:-"#cbdbf5"}
+export SPLASH_TAGLINE=${SPLASH_TAGLINE:-"Welcome to Garbcode"}
+export SPLASH_TAGLINE_COLOR=${SPLASH_TAGLINE_COLOR:-"#a30237"}
+export SPLASH_ANIMATION=${SPLASH_ANIMATION:-"zoom"}
+export SPLASH_DURATION=${SPLASH_DURATION:-"4"}
 
 # Bottom Menu
 export BOTTOMMENU_ITEMS=${BOTTOMMENU_ITEMS:-"[]"}
@@ -61,24 +61,24 @@ export BOTTOMMENU_ICON_POSITION=${BOTTOMMENU_ICON_POSITION:-"above"}
 export BOTTOMMENU_VISIBLE_ON=${BOTTOMMENU_VISIBLE_ON:-"all"}
 
 # Firebase
-export firebase_config_android=${firebase_config_android:-""}
-export firebase_config_ios=${firebase_config_ios:-""}
+export firebase_config_android=${firebase_config_android:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/google-services%20(gc).json"}
+export firebase_config_ios=${firebase_config_ios:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/GoogleService-Info-gc.plist"}
 
 # Android Keystore
-export KEY_STORE=${KEY_STORE:-""}
-export CM_KEYSTORE_PASSWORD=${CM_KEYSTORE_PASSWORD:-""}
-export CM_KEY_ALIAS=${CM_KEY_ALIAS:-""}
-export CM_KEY_PASSWORD=${CM_KEY_PASSWORD:-""}
+export KEY_STORE=${KEY_STORE:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/keystore.jks"}
+export CM_KEYSTORE_PASSWORD=${CM_KEYSTORE_PASSWORD:-"opeN@1234"}
+export CM_KEY_ALIAS=${CM_KEY_ALIAS:-"my_key_alias"}
+export CM_KEY_PASSWORD=${CM_KEY_PASSWORD:-"opeN@1234"}
 
 # iOS Signing
-export APPLE_TEAM_ID=${APPLE_TEAM_ID:-""}
-export APNS_KEY_ID=${APNS_KEY_ID:-""}
-export APNS_AUTH_KEY_URL=${APNS_AUTH_KEY_URL:-""}
-export CERT_PASSWORD=${CERT_PASSWORD:-""}
-export PROFILE_URL=${PROFILE_URL:-""}
-export CERT_CER_URL=${CERT_CER_URL:-""}
-export CERT_KEY_URL=${CERT_KEY_URL:-""}
-export APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER:-""}
+export APPLE_TEAM_ID=${APPLE_TEAM_ID:-"9H2AD7NQ49"}
+export APNS_KEY_ID=${APNS_KEY_ID:-"V566SWNF69"}
+export APNS_AUTH_KEY_URL=${APNS_AUTH_KEY_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_V566SWNF69.p8"}
+export CERT_PASSWORD=${CERT_PASSWORD:-"User@54321"}
+export PROFILE_URL=${PROFILE_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/Garbcode_App_Store.mobileprovision"}
+export CERT_CER_URL=${CERT_CER_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/apple_distribution.cer"}
+export CERT_KEY_URL=${CERT_KEY_URL:-"https://raw.githubusercontent.com/prasanna91/QuikApp/main/privatekey.key"}
+export APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER:-"F5229W2Q8S"}
 
 # SMTP Configuration
 export SMTP_SERVER=${SMTP_SERVER:-"smtp.gmail.com"}
