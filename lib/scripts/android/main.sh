@@ -10,6 +10,10 @@ export PROJECT_ROOT
 UTILS_DIR="$PROJECT_ROOT/lib/scripts/utils"
 export UTILS_DIR
 
+# Define a log file for the entire build process
+export BUILD_LOG_FILE="$PROJECT_ROOT/build_android_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$BUILD_LOG_FILE") 2>&1 # Redirect all stdout and stderr to the log file, and also to console
+
 # Log the paths for debugging
 echo "SCRIPT_DIR: $SCRIPT_DIR"
 echo "PROJECT_ROOT: $PROJECT_ROOT"
@@ -26,7 +30,7 @@ else
 fi
 
 # Trap for errors to send failure notification
-trap 'send_email_notification "failed" "Android build failed at line $LINENO"' ERR
+trap 'send_email_notification "failure" "Android build failed at line $LINENO." "$BUILD_LOG_FILE"' ERR
 
 # Logging function
 log() {
@@ -265,7 +269,7 @@ prepare_flutter_project() {
 log "Starting Flutter environment setup..."
 
 # Send build start notification
-send_email_notification "started"
+send_email_notification "started" "" "" "" ""
 
 # Validate Flutter environment
 validate_flutter_env
@@ -277,7 +281,8 @@ check_flutter_version
 #prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
-send_email_notification "success"
+# Send success email with artifacts
+send_email_notification "success" "" "" "$APK_OUTPUT_PATH" "$AAB_OUTPUT_PATH"
 
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow
@@ -533,42 +538,9 @@ find build/app/outputs/bundle/release/ -name '*.aab' -exec mv {} "$AAB_OUTPUT_PA
 
 log "Android build completed. Artifacts are in $OUTPUT_DIR/android/"
 
-# Send notification email (stub - will be implemented in send_email.sh)
-log "Sending notification email..."
-
-# Source email variables
-if [ -f "lib/scripts/utils/variables.sh" ]; then
-  source lib/scripts/utils/variables.sh
-fi
-
-# Function to send notification email
-send_notification() {
-  local status="$1"
-  local apk_url="$2"
-  local aab_url="$3"
-  local log_url="$4"
-  local resume_url="$5"
-  bash lib/scripts/utils/send_email.sh "$status" "Android" "$apk_url" "$aab_url" "" "$log_url" "$resume_url"
-}
-
-trap 'send_notification "Failed" "" "" "$BUILD_LOG_URL" "$RESUME_URL"; exit 1' ERR
-
-# After successful build, send success notification
-BUILD_LOG_URL="${BUILD_LOG_URL:-#}"
-RESUME_URL="${RESUME_URL:-#}"
-
-# Check if APK and/or AAB files exist before sending their URLs
-ACTUAL_APK_URL=""
-if [ -f "$APK_OUTPUT_PATH" ]; then
-  ACTUAL_APK_URL="$CM_BUILD_WEB_URL/artifacts/$APK_OUTPUT_PATH"
-fi
-
-ACTUAL_AAB_URL=""
-if [ -f "$AAB_OUTPUT_PATH" ]; then
-  ACTUAL_AAB_URL="$CM_BUILD_WEB_URL/artifacts/$AAB_OUTPUT_PATH"
-fi
-
-send_notification "Success" "$ACTUAL_APK_URL" "$ACTUAL_AAB_URL" "$BUILD_LOG_URL" "$RESUME_URL"
+# Remove redundant notification logic
+# The email is sent by the trap or the success call
+# rm -f "$BUILD_LOG_FILE" # Only remove if the build is successful and email with log is not needed
 
 log "Android workflow completed successfully."
 exit 0 

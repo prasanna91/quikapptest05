@@ -92,57 +92,139 @@ fi
 
 # Function to send email notification
 send_email_notification() {
-    local status
-    status=$1
-    local subject="[${status}] ${APP_NAME} Build Notification"
-    local body="
-    <html>
-    <head>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
-            .content { padding: 20px; }
-            .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-            .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-            .status-success { color: #28a745; }
-            .status-failure { color: #dc3545; }
-            .artifacts { margin: 20px 0; }
-            .artifact-link { display: block; margin: 10px 0; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <h2>${APP_NAME} Build Notification</h2>
-                <p>Organization: ${ORG_NAME}</p>
-            </div>
-            <div class='content'>
-                <h3 class='status-${status}'>Build Status: ${status}</h3>
-                <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
-                <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
-                
-                <div class='artifacts'>
-                    <h4>Build Artifacts:</h4>
-                    $( [ "${BUILD_AAB}" = "true" ] && echo "<a href='#' class='artifact-link'>📦 Download AAB</a>" )
-                    <a href='#' class='artifact-link'>📱 Download APK</a>
-                </div>
-                
-                <div class='actions'>
-                    <a href='#' class='button'>View Build Logs</a>
-                    <a href='#' class='button'>Resume Build</a>
-                </div>
-            </div>
-            <div class='footer'>
-                <p>This is an automated message from ${APP_NAME} Build System</p>
-                <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    "
+    local status=$1
+    local error_message=${2:-}
+    local log_file_path=${3:-}
+    local apk_path=${4:-}
+    local aab_path=${5:-}
 
-    # Create temporary file for email content
+    local subject=""
+    local project_configurations
+    project_configurations="$(get_project_configurations)"
+
+    if [ "$status" = "started" ]; then
+        subject="[Build Started] ${APP_NAME} Build Notification"
+        body="
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+                .content { padding: 20px; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+                .status-started { color: #007bff; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>${APP_NAME} Build Notification</h2>
+                    <p>Organization: ${ORG_NAME}</p>
+                </div>
+                <div class='content'>
+                    <h3 class='status-started'>Build Status: Started</h3>
+                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
+                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
+                    <h4>Project Configurations:</h4>
+                    <ul>
+                        ${project_configurations}
+                    </ul>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from ${APP_NAME} Build System</p>
+                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        "
+    elif [ "$status" = "success" ]; then
+        subject="[Build Success] ${APP_NAME} Build Notification"
+        body="
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+                .content { padding: 20px; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+                .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+                .status-success { color: #28a745; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>${APP_NAME} Build Notification</h2>
+                    <p>Organization: ${ORG_NAME}</p>
+                </div>
+                <div class='content'>
+                    <h3 class='status-success'>Build Status: Success</h3>
+                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
+                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
+                    <h4>Project Configurations:</h4>
+                    <ul>
+                        ${project_configurations}
+                    </ul>
+                    <div class='artifacts'>
+                        <h4>Build Artifacts:</h4>
+                        $( [ -n "${aab_path}" ] && echo "<p><a href='file://${aab_path}' class='artifact-link'>📦 Download AAB</a></p>" )
+                        $( [ -n "${apk_path}" ] && echo "<p><a href='file://${apk_path}' class='artifact-link'>📱 Download APK</a></p>" )
+                    </div>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from ${APP_NAME} Build System</p>
+                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        "
+    elif [ "$status" = "failure" ]; then
+        subject="[Build Failed] ${APP_NAME} Build Notification"
+        body="
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+                .content { padding: 20px; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+                .status-failure { color: #dc3545; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>${APP_NAME} Build Notification</h2>
+                    <p>Organization: ${ORG_NAME}</p>
+                </div>
+                <div class='content'>
+                    <h3 class='status-failure'>Build Status: Failed</h3>
+                    <p>Version: ${VERSION_NAME} (${VERSION_CODE})</p>
+                    <p>Build Date: $(date '+%Y-%m-%d %H:%M:%S')</p>
+                    <h4>Project Configurations:</h4>
+                    <ul>
+                        ${project_configurations}
+                    </ul>
+                    $( [ -n "${error_message}" ] && echo "<h4>Error Details:</h4><pre>${error_message}</pre>" )
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from ${APP_NAME} Build System</p>
+                    <p>© $(date '+%Y') ${ORG_NAME}. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        "
+    else
+        echo "Invalid status for email notification: $status"
+        return 1
+    fi
+
     local email_file
     email_file=$(mktemp)
     echo "${body}" > "${email_file}"
@@ -156,10 +238,52 @@ send_email_notification() {
         "${EMAIL_SMTP_USER}" \
         "${EMAIL_ID}" \
         "${subject}" \
-        "${email_file}"
+        "${email_file}" \
+        "${log_file_path}" \
+        "${apk_path}" \
+        "${aab_path}"
     
     # Clean up temporary file
     rm -f "${email_file}"
+}
+
+# Helper function to get project configurations as HTML list items
+get_project_configurations() {
+    local configs=""
+    configs+="<li>App Name: ${APP_NAME}</li>"
+    configs+="<li>Version: ${VERSION_NAME} (${VERSION_CODE})</li>"
+    configs+="<li>Organization: ${ORG_NAME}</li>"
+    configs+="<li>Web URL: ${WEB_URL}</li>"
+    configs+="<li>Package Name: ${PKG_NAME}</li>"
+    configs+="<li>Bundle ID: ${BUNDLE_ID}</li>"
+    configs+="<li>Email ID: ${EMAIL_ID}</li>"
+    configs+="<li>Push Notifications: ${PUSH_NOTIFY}</li>"
+    configs+="<li>Chatbot Integration: ${IS_CHATBOT}</li>"
+    configs+="<li>Deeplinking: ${IS_DEEPLINK}</li>"
+    configs+="<li>Splash Screen: ${IS_SPLASH}</li>"
+    configs+="<li>Pull Down Refresh: ${IS_PULLDOWN}</li>"
+    configs+="<li>Bottom Menu: ${IS_BOTTOMMENU}</li>"
+    configs+="<li>Loading Indicators: ${IS_LOAD_IND}</li>"
+    configs+="<li>Camera Access: ${IS_CAMERA}</li>"
+    configs+="<li>Location Access: ${IS_LOCATION}</li>"
+    configs+="<li>Microphone Access: ${IS_MIC}</li>"
+    configs+="<li>Notification Access: ${IS_NOTIFICATION}</li>"
+    configs+="<li>Contact Access: ${IS_CONTACT}</li>"
+    configs+="<li>Biometric Authentication: ${IS_BIOMETRIC}</li>"
+    configs+="<li>Calendar Access: ${IS_CALENDAR}</li>"
+    configs+="<li>Storage Access: ${IS_STORAGE}</li>"
+    configs+="<li>Logo URL: ${LOGO_URL}</li>"
+    configs+="<li>Splash URL: ${SPLASH_URL}</li>"
+    configs+="<li>Keystore Used: ${USE_KEYSTORE}</li>"
+    
+    # Check for Firebase config file presence
+    if [ -f "${ANDROID_FIREBASE_CONFIG_PATH}" ]; then
+        configs+="<li>Firebase Integration: Yes</li>"
+    else
+        configs+="<li>Firebase Integration: No</li>"
+    fi
+
+    echo "${configs}"
 }
 
 # Generate environment.dart
