@@ -126,10 +126,27 @@ send_email_notification() {
     local subject="QuikApp Build: $status"
     local body="Build Status: $status\n\nMessage: $message\n\nLog file: $log_file"
     
-    echo -e "$body" | mail -s "$subject" -S "smtp=smtp://$SMTP_SERVER:$SMTP_PORT" \
-        -S "smtp-use-starttls" -S "smtp-auth=login" \
-        -S "smtp-auth-user=$SMTP_USER" -S "smtp-auth-password=$SMTP_PASS" \
-        "$EMAIL_ID"
+    # Use a simpler approach that works across different systems
+    echo -e "$body" > /tmp/email_body.txt
+    
+    # Try different mail approaches
+    if command -v sendmail >/dev/null 2>&1; then
+        # Use sendmail if available
+        (
+            echo "To: $EMAIL_ID"
+            echo "Subject: $subject"
+            echo ""
+            cat /tmp/email_body.txt
+        ) | sendmail "$EMAIL_ID"
+    elif command -v mail >/dev/null 2>&1; then
+        # Use basic mail command
+        mail -s "$subject" "$EMAIL_ID" < /tmp/email_body.txt
+    else
+        echo "No mail system available. Email notification skipped."
+    fi
+    
+    # Clean up
+    rm -f /tmp/email_body.txt
 }
 
 # Function to get project configurations for email

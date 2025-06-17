@@ -84,6 +84,16 @@ else
   log "lib/config/env.sh not found. Using Codemagic environment variables."
 fi
 
+# Ensure SPLASH_URL is properly set (fallback to SPLASH if SPLASH_URL is not set)
+if [ -z "${SPLASH_URL:-}" ] && [ -n "${SPLASH:-}" ]; then
+  export SPLASH_URL="$SPLASH"
+fi
+
+# Ensure firebase_config_android is properly set
+if [ -z "${firebase_config_android:-}" ] && [ -n "${FIREBASE_CONFIG_ANDROID:-}" ]; then
+  export firebase_config_android="$FIREBASE_CONFIG_ANDROID"
+fi
+
 # Export all variables needed by sub-scripts if not already exported
 export APP_NAME
 export PKG_NAME
