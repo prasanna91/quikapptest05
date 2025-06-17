@@ -12,24 +12,18 @@ echo "SCRIPT_DIR: $SCRIPT_DIR"
 echo "PROJECT_ROOT: $PROJECT_ROOT"
 echo "UTILS_DIR: $UTILS_DIR"
 
-# Source common variables and utilities
-if [ -f "$UTILS_DIR/variables.sh" ]; then
-  echo "Found variables.sh at $UTILS_DIR/variables.sh"
-  source "$UTILS_DIR/variables.sh"
+# Source common variables and utilities from config.sh
+if [ -f "$UTILS_DIR/config.sh" ]; then
+  echo "Found config.sh at $UTILS_DIR/config.sh"
+  source "$UTILS_DIR/config.sh"
 else
-  echo "Error: variables.sh not found at $UTILS_DIR/variables.sh"
+  echo "Error: config.sh not found at $UTILS_DIR/config.sh"
   ls -la "$UTILS_DIR"
   exit 1
 fi
 
-if [ -f "$UTILS_DIR/notifications.sh" ]; then
-  echo "Found notifications.sh at $UTILS_DIR/notifications.sh"
-  source "$UTILS_DIR/notifications.sh"
-else
-  echo "Error: notifications.sh not found at $UTILS_DIR/notifications.sh"
-  ls -la "$UTILS_DIR"
-  exit 1
-fi
+# Trap for errors to send failure notification
+trap 'send_email_notification "failed" "Android build failed at line $LINENO"' ERR
 
 # Logging function
 log() {
@@ -37,7 +31,7 @@ log() {
 }
 
 # Source local environment variables if available (for local development/testing)
-# These will override defaults from variables.sh
+# These will override defaults from config.sh
 if [ -f "$PROJECT_ROOT/lib/config/env.sh" ]; then
   log "Sourcing local environment variables from lib/config/env.sh"
   source "$PROJECT_ROOT/lib/config/env.sh"
@@ -93,6 +87,12 @@ export KEY_STORE
 export CM_KEYSTORE_PASSWORD
 export CM_KEY_ALIAS
 export CM_KEY_PASSWORD
+export USE_KEYSTORE
+export BUILD_AAB
+export EMAIL_SMTP_SERVER
+export EMAIL_SMTP_PORT
+export EMAIL_SMTP_USER
+export EMAIL_SMTP_PASS
 
 # Debug: Display important environment variables
 log "=== Environment Variables Debug ==="
@@ -249,7 +249,7 @@ prepare_flutter_project() {
 log "Starting Flutter environment setup..."
 
 # Send build start notification
-send_build_start_notification "Android"
+send_email_notification "started"
 
 # Validate Flutter environment
 validate_flutter_env
@@ -261,7 +261,7 @@ check_flutter_version
 #prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
-send_build_success_notification "Android" "${BUILD_URL:-}"
+send_email_notification "success"
 
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow

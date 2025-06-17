@@ -410,6 +410,7 @@ generate_build_gradle
 generate_pubspec_yaml
 
 # Send build start notification
-send_email_notification "started"
+# This call is moved to main.sh or combined.sh to be part of the build flow
+# send_email_notification "started"
 
 echo "Configuration generated successfully!" 
