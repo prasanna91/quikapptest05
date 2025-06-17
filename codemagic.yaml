@@ -65,24 +65,24 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-      - name: Setup Flutter
-        script: |
-          echo "Setting up Flutter environment..."
-
-          # Update PATH
-          export PATH="$HOME/flutter/bin:$PATH"
-
-          # Run Flutter doctor
-          echo "Running Flutter doctor..."
-          flutter doctor -v
-
-          # Accept Android licenses
-          echo "Accepting Android licenses..."
-          yes | flutter doctor --android-licenses
-
-          # Update dependencies
-          echo "Updating project dependencies..."
-          flutter pub get
+#      - name: Setup Flutter
+#        script: |
+#          echo "Setting up Flutter environment..."
+#
+#          # Update PATH
+#          export PATH="$HOME/flutter/bin:$PATH"
+#
+#          # Run Flutter doctor
+#          echo "Running Flutter doctor..."
+#          flutter doctor -v
+#
+#          # Accept Android licenses
+#          echo "Accepting Android licenses..."
+#          yes | flutter doctor --android-licenses
+#
+#          # Update dependencies
+#          echo "Updating project dependencies..."
+#          flutter pub get
 
       - name: Install FVM
         script: |
@@ -159,24 +159,24 @@ workflows:
         PROJECT_NAME: "${APP_NAME}"
         BUILD_URL: $CM_BUILD_URL
     scripts:
-      - name: Setup Flutter
-        script: |
-          echo "Setting up Flutter environment..."
-
-          # Update PATH
-          export PATH="$HOME/flutter/bin:$PATH"
-
-          # Run Flutter doctor
-          echo "Running Flutter doctor..."
-          flutter doctor -v
-
-          # Accept Android licenses
-          echo "Accepting Android licenses..."
-          yes | flutter doctor --android-licenses
-
-          # Update dependencies
-          echo "Updating project dependencies..."
-          flutter pub get
+#      - name: Setup Flutter
+#        script: |
+#          echo "Setting up Flutter environment..."
+#
+#          # Update PATH
+#          export PATH="$HOME/flutter/bin:$PATH"
+#
+#          # Run Flutter doctor
+#          echo "Running Flutter doctor..."
+#          flutter doctor -v
+#
+#          # Accept Android licenses
+#          echo "Accepting Android licenses..."
+#          yes | flutter doctor --android-licenses
+#
+#          # Update dependencies
+#          echo "Updating project dependencies..."
+#          flutter pub get
 
       - name: Install FVM
         script: |
