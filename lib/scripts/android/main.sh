@@ -5,10 +5,22 @@ trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+UTILS_DIR="$SCRIPT_DIR/../utils"
 
 # Source common variables and utilities
-source "$SCRIPT_DIR/../utils/variables.sh"
-source "$SCRIPT_DIR/../utils/notifications.sh"
+if [ -f "$UTILS_DIR/variables.sh" ]; then
+  source "$UTILS_DIR/variables.sh"
+else
+  echo "Error: variables.sh not found at $UTILS_DIR/variables.sh"
+  exit 1
+fi
+
+if [ -f "$UTILS_DIR/notifications.sh" ]; then
+  source "$UTILS_DIR/notifications.sh"
+else
+  echo "Error: notifications.sh not found at $UTILS_DIR/notifications.sh"
+  exit 1
+fi
 
 # Logging function
 log() {
@@ -21,7 +33,7 @@ if [ -f "$PROJECT_ROOT/lib/config/env.sh" ]; then
   log "Sourcing local environment variables from lib/config/env.sh"
   source "$PROJECT_ROOT/lib/config/env.sh"
 else
-  log "lib/config/env.sh not found. Assuming Codemagic environment variables (CM_ENV) are present."
+  log "lib/config/env.sh not found. Using Codemagic environment variables."
 fi
 
 # Export all variables needed by sub-scripts if not already exported
