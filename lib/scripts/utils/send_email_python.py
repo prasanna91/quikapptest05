@@ -33,8 +33,8 @@ def send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_e
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 8:
-        print("Usage: python send_email_python.py <smtp_server> <smtp_port> <sender_email> <sender_password> <recipient_email_from_config_sh> <subject> <body_file>")
+    if len(sys.argv) != 9:
+        print("Usage: python send_email_python.py <smtp_server> <smtp_port> <sender_email> <sender_password> <sender_email_again_from_bash> <recipient_email> <subject> <body_file>")
         sys.exit(1)
 
     smtp_server = sys.argv[1]
