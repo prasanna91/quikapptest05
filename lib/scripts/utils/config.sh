@@ -109,6 +109,9 @@ export AAB_OUTPUT_PATH="$OUTPUT_DIR/android"
 mkdir -p "$OUTPUT_DIR/android"
 mkdir -p "$TEMP_DIR"
 
+# Add Kotlin version here
+export KOTLIN_VERSION=${KOTLIN_VERSION:-"2.1.0"}
+
 # Function to send email notifications
 send_email_notification() {
     local status="$1"
@@ -361,7 +364,7 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
     // FIREBASE_BOM_DEPENDENCY_PLACEHOLDER
     // FIREBASE_MESSAGING_DEPENDENCY_PLACEHOLDER
 }

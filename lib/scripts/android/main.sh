@@ -2,6 +2,11 @@
 set -euo pipefail
 trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 
+# Logging function (moved up before first use)
+log() {
+  echo "[ANDROID][$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export SCRIPT_DIR
@@ -35,11 +40,6 @@ log "Updating pubspec.yaml with environment variables..."
 
 # Trap for errors to send failure notification
 trap 'send_email_notification "failure" "Android build failed at line $LINENO." "$BUILD_LOG_FILE"' ERR
-
-# Logging function
-log() {
-  echo "[ANDROID][$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
 
 # Function to validate environment
 validate_environment() {
@@ -108,7 +108,7 @@ export IS_BIOMETRIC
 export IS_CALENDAR
 export IS_STORAGE
 export LOGO_URL
-export SPLASH
+export SPLASH_URL
 export SPLASH_BG
 export SPLASH_BG_COLOR
 export SPLASH_TAGLINE
@@ -214,8 +214,8 @@ if [ "${IS_BOTTOMMENU:-}" = "true" ]; then
 fi
 
 log "Firebase Config:"
-log "  FIREBASE_CONFIG_ANDROID: ${FIREBASE_CONFIG_ANDROID:-[NOT SET]}"
-log "  FIREBASE_CONFIG_IOS: ${FIREBASE_CONFIG_IOS:-[NOT SET]}"
+log "  firebase_config_android: ${firebase_config_android:-[NOT SET]}"
+log "  firebase_config_ios: ${firebase_config_ios:-[NOT SET]}"
 
 log "iOS Signing:"
 log "  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-[NOT SET]}"
