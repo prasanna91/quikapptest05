@@ -74,6 +74,19 @@ def send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_e
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, message.as_string())
         print("Email sent successfully!")
+    except ssl.SSLError as ssl_err:
+        print(f"SSL certificate verification failed: {ssl_err}. Retrying without certificate verification...")
+        try:
+            # Retry with unverified context
+            context = ssl.create_unverified_context()
+            with smtplib.SMTP(smtp_server, int(smtp_port)) as server:
+                server.starttls(context=context)
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+            print("Email sent successfully (without certificate verification)!")
+        except Exception as retry_e:
+            print(f"Error sending email even after retrying without certificate verification: {retry_e}")
+            sys.exit(1)
     except Exception as e:
         print(f"Error sending email: {e}")
         sys.exit(1)

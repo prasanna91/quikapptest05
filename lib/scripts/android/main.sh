@@ -37,6 +37,40 @@ log() {
   echo "[ANDROID][$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+# Function to validate environment
+validate_environment() {
+  log "Validating environment..."
+  
+  # Check write permissions
+  if [ ! -w "$PROJECT_ROOT" ]; then
+    log "[ERROR] No write permission in $PROJECT_ROOT"
+    exit 1
+  fi
+  
+  # Check required environment variables
+  local required_vars=(
+    "APP_NAME"
+    "PKG_NAME"
+    "VERSION_NAME"
+    "VERSION_CODE"
+    "ORG_NAME"
+    "WEB_URL"
+    "EMAIL_ID"
+  )
+  
+  for var in "${required_vars[@]}"; do
+    if [ -z "${!var:-}" ]; then
+      log "[ERROR] Required environment variable $var is not set"
+      exit 1
+    fi
+  done
+  
+  # Cleanup old log files (keep last 5)
+  find "$PROJECT_ROOT" -name "build_android_*.log" -type f | sort -r | tail -n +6 | xargs rm -f
+  
+  log "Environment validation completed"
+}
+
 # Source local environment variables if available (for local development/testing)
 # These will override defaults from config.sh
 if [ -f "$PROJECT_ROOT/lib/config/env.sh" ]; then
@@ -113,6 +147,9 @@ export ANDROID_MIPMAP_DIR
 export ANDROID_DRAWABLE_DIR
 export APK_OUTPUT_PATH
 export AAB_OUTPUT_PATH
+
+# Add environment validation at the start
+validate_environment
 
 # Debug: Display important environment variables
 log "=== Environment Variables Debug ==="
@@ -249,8 +286,14 @@ prepare_flutter_project() {
   # Update version in pubspec.yaml
   log "Updating version in pubspec.yaml..."
   local version_string="${VERSION_NAME}+${VERSION_CODE}"
-  sed -i.bak "s/^version: .*/version: $version_string/" "$PROJECT_ROOT/pubspec.yaml"
-  rm -f "$PROJECT_ROOT/pubspec.yaml.bak"
+  awk -v var_name="$VERSION_NAME" -v var_code="$VERSION_CODE" \
+    '/^version: /{print "version: " var_name "+" var_code; next} {print}' \
+    "$PROJECT_ROOT/pubspec.yaml" > "$PROJECT_ROOT/pubspec.yaml.tmp" && \
+    mv "$PROJECT_ROOT/pubspec.yaml.tmp" "$PROJECT_ROOT/pubspec.yaml"
+  log "Updated pubspec.yaml to version: ${VERSION_NAME}+${VERSION_CODE}"
+  # Verify pubspec.yaml content after update
+  log "Current pubspec.yaml content (version section):"
+  cat "$PROJECT_ROOT/pubspec.yaml" | grep "^version:"
   
   # Get dependencies
   log "Getting Flutter dependencies..."
@@ -272,7 +315,7 @@ prepare_flutter_project() {
 }
 
 # Main setup sequence
-log "Starting Flutter environment setup..."
+log "Starting Android build setup..."
 
 # Send build start notification
 send_email_notification "started" "" "" "" ""
@@ -283,12 +326,10 @@ validate_flutter_env
 # Check Flutter version (now just logs the version)
 check_flutter_version
 
-# Prepare Flutter project
-#prepare_flutter_project
+# Prepare Flutter project (this will also update pubspec.yaml version)
+prepare_flutter_project
 
 log "Flutter environment setup completed successfully."
-# Send success email with artifacts
-send_email_notification "success" "" "" "$APK_OUTPUT_PATH" "$AAB_OUTPUT_PATH"
 
 # Determine workflow based on variables
 WORKFLOW_TYPE="android-free" # Default workflow
@@ -364,40 +405,6 @@ if [ -f "lib/scripts/android/permissions.sh" ]; then
 else
   log "[WARN] Permissions sub-script not found. Skipping permissions setup."
 fi
-
-# Function to validate environment
-validate_environment() {
-  log "Validating environment..."
-  
-  # Check write permissions
-  if [ ! -w "$PROJECT_ROOT" ]; then
-    log "[ERROR] No write permission in $PROJECT_ROOT"
-    exit 1
-  fi
-  
-  # Check required environment variables
-  local required_vars=(
-    "APP_NAME"
-    "PKG_NAME"
-    "VERSION_NAME"
-    "VERSION_CODE"
-    "ORG_NAME"
-    "WEB_URL"
-    "EMAIL_ID"
-  )
-  
-  for var in "${required_vars[@]}"; do
-    if [ -z "${!var:-}" ]; then
-      log "[ERROR] Required environment variable $var is not set"
-      exit 1
-    fi
-  done
-  
-  # Cleanup old log files (keep last 5)
-  find "$PROJECT_ROOT" -name "build_android_*.log" -type f | sort -r | tail -n +6 | xargs rm -f
-  
-  log "Environment validation completed"
-}
 
 # Function to validate Firebase config
 validate_firebase_config() {
@@ -505,123 +512,6 @@ check_password_strength() {
   
   return 0
 }
-
-# Add environment validation at the start
-validate_environment
-
-# Function to setup Firebase configuration
-setup_firebase() {
-  log "Setting up Firebase configuration..."
-  
-  if [ "${PUSH_NOTIFY:-}" != "true" ]; then
-    log "PUSH_NOTIFY is false; skipping Firebase setup."
-    return 0
-  fi
-  
-  # Backup existing config
-  backup_file "$ANDROID_FIREBASE_CONFIG_PATH"
-  
-  # Validate Firebase config URL
-  if [ -z "${firebase_config_android:-}" ]; then
-    log "[ERROR] Firebase configuration URL is not set"
-    send_email_notification "failure" "Firebase configuration URL is not set" "$BUILD_LOG_FILE"
-    return 1
-  fi
-  
-  # Remove any quotes from the URL
-  local clean_url="${firebase_config_android//[\"']/}"
-  log "Using Firebase config URL: $clean_url"
-  
-  # Create necessary directories
-  mkdir -p "$ANDROID_ROOT/app"
-  mkdir -p "assets"
-  
-  # Try downloading with curl first
-  if command_exists curl; then
-    if curl -L -o "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
-      log "Successfully downloaded google-services.json using curl"
-      # Copy to assets folder for Dart validation
-      cp "$ANDROID_FIREBASE_CONFIG_PATH" "assets/google-services.json"
-      log "Copied google-services.json to assets folder for Dart validation"
-      
-      if ! validate_firebase_config "$ANDROID_FIREBASE_CONFIG_PATH"; then
-        log "[ERROR] Invalid Firebase configuration"
-        send_email_notification "failure" "Invalid Firebase configuration" "$BUILD_LOG_FILE"
-        return 1
-      fi
-      
-      return 0
-    fi
-  fi
-  
-  # Try wget if curl fails
-  if command_exists wget; then
-    if wget -O "$ANDROID_FIREBASE_CONFIG_PATH" "$clean_url"; then
-      log "Successfully downloaded google-services.json using wget"
-      # Copy to assets folder for Dart validation
-      cp "$ANDROID_FIREBASE_CONFIG_PATH" "assets/google-services.json"
-      log "Copied google-services.json to assets folder for Dart validation"
-      
-      if ! validate_firebase_config "$ANDROID_FIREBASE_CONFIG_PATH"; then
-        log "[ERROR] Invalid Firebase configuration"
-        send_email_notification "failure" "Invalid Firebase configuration" "$BUILD_LOG_FILE"
-        return 1
-      fi
-      
-      return 0
-    fi
-  fi
-  
-  log "[ERROR] Failed to download google-services.json"
-  send_email_notification "failure" "Failed to download Firebase configuration" "$BUILD_LOG_FILE"
-  return 1
-}
-
-# Function to update build.gradle for Firebase
-update_build_gradle_for_firebase() {
-  if [ "${PUSH_NOTIFY:-}" != "true" ]; then
-    return 0
-  fi
-  
-  local build_gradle="$ANDROID_ROOT/app/build.gradle"
-  if [ ! -f "$build_gradle" ]; then
-    log "[ERROR] build.gradle not found"
-    return 1
-  fi
-  
-  # Add Firebase dependencies if not present
-  if ! grep -q "com.google.gms:google-services" "$build_gradle"; then
-    sed -i '' '/dependencies {/a\
-    implementation platform('\''com.google.firebase:firebase-bom:32.7.4'\'')\
-    implementation '\''com.google.firebase:firebase-analytics'\''\
-    implementation '\''com.google.firebase:firebase-messaging'\''\
-    apply plugin: '\''com.google.gms.google-services'\''' "$build_gradle"
-  fi
-  
-  # Add Google Services plugin if not present
-  if ! grep -q "com.google.gms.google-services" "$ANDROID_ROOT/build.gradle"; then
-    sed -i '' '/buildscript {/a\
-    dependencies {\
-        classpath '\''com.google.gms:google-services:4.4.1'\''\
-    }' "$ANDROID_ROOT/build.gradle"
-  fi
-  
-  return 0
-}
-
-# Replace the existing Firebase setup code with the new function calls
-log "Setting up Firebase..."
-if setup_firebase; then
-  if update_build_gradle_for_firebase; then
-    log "Firebase setup completed successfully"
-  else
-    log "[ERROR] Failed to update build.gradle for Firebase"
-    send_email_notification "failure" "Failed to update build.gradle for Firebase" "$BUILD_LOG_FILE"
-  fi
-else
-  log "[ERROR] Firebase setup failed"
-  send_email_notification "failure" "Firebase setup failed" "$BUILD_LOG_FILE"
-fi
 
 # Function to send keystore error notification
 send_keystore_error_notification() {
@@ -751,21 +641,23 @@ EOF
   # Update build.gradle to use keystore
   if [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
     # Add signing configs to build.gradle
-    sed -i '' '/android {/a\
+    sed -i '' "/android {/a\
     signingConfigs {\
         release {\
             storeFile file("keystore.jks")\
-            storePassword System.getenv("CM_KEYSTORE_PASSWORD")\
-            keyAlias System.getenv("CM_KEY_ALIAS")\
-            keyPassword System.getenv("CM_KEY_PASSWORD")\
+            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\
+            keyAlias System.getenv(\"CM_KEY_ALIAS\")\
+            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\
         }\
-    }' "$ANDROID_ROOT/app/build.gradle"
+    }"
+ "$ANDROID_ROOT/app/build.gradle"
     
     # Update buildTypes to use signing config
-    sed -i '' '/buildTypes {/a\
+    sed -i '' "/buildTypes {/a\
         release {\
             signingConfig signingConfigs.release\
-        }' "$ANDROID_ROOT/app/build.gradle"
+        }"
+ "$ANDROID_ROOT/app/build.gradle"
   else
     log "[ERROR] build.gradle not found"
     send_keystore_error_notification "setup_error" "build.gradle not found"
