@@ -4,8 +4,11 @@ trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export SCRIPT_DIR
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+export PROJECT_ROOT
 UTILS_DIR="$PROJECT_ROOT/lib/scripts/utils"
+export UTILS_DIR
 
 # Log the paths for debugging
 echo "SCRIPT_DIR: $SCRIPT_DIR"
@@ -93,6 +96,19 @@ export EMAIL_SMTP_SERVER
 export EMAIL_SMTP_PORT
 export EMAIL_SMTP_USER
 export EMAIL_SMTP_PASS
+export PROJECT_ROOT
+export ANDROID_ROOT
+export ASSETS_DIR
+export OUTPUT_DIR
+export TEMP_DIR
+export ANDROID_MANIFEST_PATH
+export ANDROID_BUILD_GRADLE_PATH
+export ANDROID_KEY_PROPERTIES_PATH
+export ANDROID_FIREBASE_CONFIG_PATH
+export ANDROID_MIPMAP_DIR
+export ANDROID_DRAWABLE_DIR
+export APK_OUTPUT_PATH
+export AAB_OUTPUT_PATH
 
 # Debug: Display important environment variables
 log "=== Environment Variables Debug ==="

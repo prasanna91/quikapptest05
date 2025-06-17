@@ -45,6 +45,36 @@ BOTTOMMENU_ACTIVE_TAB_COLOR=${BOTTOMMENU_ACTIVE_TAB_COLOR:-"#0000FF"}
 BOTTOMMENU_ICON_POSITION=${BOTTOMMENU_ICON_POSITION:-"above"}
 BOTTOMMENU_VISIBLE_ON=${BOTTOMMENU_VISIBLE_ON:-"all"}
 
+# Admin / Build Environment Variables (defaults)
+export CM_BUILD_DIR=${CM_BUILD_DIR:-""}
+export BUILD_MODE=${BUILD_MODE:-"release"}
+export FLUTTER_VERSION=${FLUTTER_VERSION:-"3.32.2"}
+export GRADLE_VERSION=${GRADLE_VERSION:-"8.0.0"}
+export JAVA_VERSION=${JAVA_VERSION:-"17"}
+export ANDROID_COMPILE_SDK=${ANDROID_COMPILE_SDK:-"34"}
+export ANDROID_MIN_SDK=${ANDROID_MIN_SDK:-"21"}
+export ANDROID_TARGET_SDK=${ANDROID_TARGET_SDK:-"34"}
+export ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
+export ANDROID_NDK_VERSION=${ANDROID_NDK_VERSION:-"27.0.12077973"}
+export ANDROID_CMDLINE_TOOLS=${ANDROID_CMDLINE_TOOLS:-"latest"}
+
+# These paths are derived from PROJECT_ROOT, which is set in main.sh
+export PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../.." && pwd )"
+export ANDROID_ROOT="$PROJECT_ROOT/android"
+export ASSETS_DIR="$PROJECT_ROOT/assets"
+export OUTPUT_DIR="$PROJECT_ROOT/output"
+export TEMP_DIR="$PROJECT_ROOT/temp"
+
+export ANDROID_MANIFEST_PATH="$ANDROID_ROOT/app/src/main/AndroidManifest.xml"
+export ANDROID_BUILD_GRADLE_PATH="$ANDROID_ROOT/app/build.gradle"
+export ANDROID_KEY_PROPERTIES_PATH="$ANDROID_ROOT/gradle.properties"
+export ANDROID_FIREBASE_CONFIG_PATH="$ANDROID_ROOT/app/google-services.json"
+export ANDROID_MIPMAP_DIR="$ANDROID_ROOT/app/src/main/res/mipmap-anydpi-v26"
+export ANDROID_DRAWABLE_DIR="$ANDROID_ROOT/app/src/main/res/drawable-v21"
+
+export APK_OUTPUT_PATH="$OUTPUT_DIR/android"
+export AAB_OUTPUT_PATH="$OUTPUT_DIR/android"
+
 # Email Configuration
 export EMAIL_SMTP_SERVER="smtp.gmail.com"
 export EMAIL_SMTP_PORT="587"
