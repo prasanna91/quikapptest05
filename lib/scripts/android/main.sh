@@ -937,77 +937,79 @@ if [ -f "pubspec.yaml" ]; then
   fi
 fi
 
-# Create a comprehensive namespace fix file for problematic plugins
-log "Creating comprehensive plugin namespace fixes..."
-cat > android/plugin_namespace_fix.gradle << 'EOF'
-// Plugin namespace fixes for AGP 8.x compatibility
-// This file is applied to all subprojects to fix namespace issues
+# Clean up any existing separate namespace fix file (we now use direct approach)
+if [ -f "android/plugin_namespace_fix.gradle" ]; then
+  log "Removing separate namespace fix file (using direct approach now)..."
+  rm -f "android/plugin_namespace_fix.gradle"
+fi
 
-subprojects { project ->
-    afterEvaluate {
-        if (project.hasProperty('android')) {
-            def android = project.android
-            
-            // Fix namespace for flutter_inappwebview (version 6.0.0+)
-            if (project.name == 'flutter_inappwebview' && !android.hasProperty('namespace')) {
-                android.namespace = 'com.pichillilorenzo.flutter_inappwebview'
-                println "Applied namespace fix for flutter_inappwebview: ${android.namespace}"
-            }
-            
-            // Fix namespace for flutter_local_notifications
-            if (project.name == 'flutter_local_notifications' && !android.hasProperty('namespace')) {
-                android.namespace = 'com.dexterous.flutterlocalnotifications'
-                println "Applied namespace fix for flutter_local_notifications: ${android.namespace}"
-            }
-            
-            // Fix namespace for permission_handler_android
-            if (project.name == 'permission_handler_android' && !android.hasProperty('namespace')) {
-                android.namespace = 'com.baseflow.permissionhandler'
-                println "Applied namespace fix for permission_handler_android: ${android.namespace}"
-            }
-            
-            // Fix namespace for url_launcher_android
-            if (project.name == 'url_launcher_android' && !android.hasProperty('namespace')) {
-                android.namespace = 'io.flutter.plugins.urllauncher'
-                println "Applied namespace fix for url_launcher_android: ${android.namespace}"
-            }
-            
-            // Fix namespace for package_info_plus (version 8.0.0+)
-            if (project.name == 'package_info_plus' && !android.hasProperty('namespace')) {
-                android.namespace = 'dev.fluttercommunity.plus.packageinfo'
-                println "Applied namespace fix for package_info_plus: ${android.namespace}"
-            }
-            
-            // Fix namespace for shared_preferences_android
-            if (project.name == 'shared_preferences_android' && !android.hasProperty('namespace')) {
-                android.namespace = 'io.flutter.plugins.sharedpreferences'
-                println "Applied namespace fix for shared_preferences_android: ${android.namespace}"
-            }
-            
-            // Fix namespace for other potential plugins
-            if (project.name == 'file_picker' && !android.hasProperty('namespace')) {
-                android.namespace = 'com.mr.flutter.plugin.filepicker'
-                println "Applied namespace fix for file_picker: ${android.namespace}"
-            }
-            
-            if (project.name == 'webview_flutter_android' && !android.hasProperty('namespace')) {
-                android.namespace = 'io.flutter.plugins.webviewflutter'
-                println "Applied namespace fix for webview_flutter_android: ${android.namespace}"
+# Apply the namespace fix directly to the root build.gradle.kts instead of using a separate file
+if [ -f "android/build.gradle.kts" ]; then
+  if ! grep -q "flutter_inappwebview.*namespace" android/build.gradle.kts; then
+    log "Applying comprehensive plugin namespace fixes directly to build.gradle.kts..."
+    
+    # Remove the separate namespace fix file approach and add fixes directly
+    cat >> android/build.gradle.kts << 'EOF'
+
+// Plugin namespace fixes for AGP 8.x compatibility
+subprojects {
+    pluginManager.withPlugin("com.android.library") {
+        configure<com.android.build.gradle.LibraryExtension> {
+            when (project.name) {
+                "flutter_inappwebview" -> {
+                    if (namespace == null) {
+                        namespace = "com.pichillilorenzo.flutter_inappwebview"
+                        println("Applied namespace fix for flutter_inappwebview")
+                    }
+                }
+                "flutter_local_notifications" -> {
+                    if (namespace == null) {
+                        namespace = "com.dexterous.flutterlocalnotifications"
+                        println("Applied namespace fix for flutter_local_notifications")
+                    }
+                }
+                "permission_handler_android" -> {
+                    if (namespace == null) {
+                        namespace = "com.baseflow.permissionhandler"
+                        println("Applied namespace fix for permission_handler_android")
+                    }
+                }
+                "url_launcher_android" -> {
+                    if (namespace == null) {
+                        namespace = "io.flutter.plugins.urllauncher"
+                        println("Applied namespace fix for url_launcher_android")
+                    }
+                }
+                "package_info_plus" -> {
+                    if (namespace == null) {
+                        namespace = "dev.fluttercommunity.plus.packageinfo"
+                        println("Applied namespace fix for package_info_plus")
+                    }
+                }
+                "shared_preferences_android" -> {
+                    if (namespace == null) {
+                        namespace = "io.flutter.plugins.sharedpreferences"
+                        println("Applied namespace fix for shared_preferences_android")
+                    }
+                }
+                "file_picker" -> {
+                    if (namespace == null) {
+                        namespace = "com.mr.flutter.plugin.filepicker"
+                        println("Applied namespace fix for file_picker")
+                    }
+                }
+                "webview_flutter_android" -> {
+                    if (namespace == null) {
+                        namespace = "io.flutter.plugins.webviewflutter"
+                        println("Applied namespace fix for webview_flutter_android")
+                    }
+                }
             }
         }
     }
 }
 EOF
-
-# Apply the namespace fix to the root build.gradle.kts
-if [ -f "android/build.gradle.kts" ]; then
-  if ! grep -q "plugin_namespace_fix.gradle" android/build.gradle.kts; then
-    log "Applying comprehensive plugin namespace fixes..."
-    # Add the apply statement at the end of the file
-    echo "" >> android/build.gradle.kts
-    echo "// Apply plugin namespace fixes" >> android/build.gradle.kts
-    echo "apply(from = \"plugin_namespace_fix.gradle\")" >> android/build.gradle.kts
-    log "Applied comprehensive plugin namespace fixes"
+    log "Applied comprehensive plugin namespace fixes directly"
   fi
 fi
 
@@ -1288,18 +1290,11 @@ grep "package_info_plus:" pubspec.yaml || log "package_info_plus not found in pu
 grep "flutter_local_notifications:" pubspec.yaml || log "flutter_local_notifications not found in pubspec.yaml"
 grep "permission_handler:" pubspec.yaml || log "permission_handler not found in pubspec.yaml"
 
-# Check if namespace fix file was created
-if [ -f "android/plugin_namespace_fix.gradle" ]; then
-  log "✅ Plugin namespace fix file created"
+# Check if namespace fixes are applied directly to build.gradle.kts
+if grep -q "flutter_inappwebview.*namespace" android/build.gradle.kts; then
+  log "✅ Plugin namespace fixes applied directly to build.gradle.kts"
 else
-  log "❌ Plugin namespace fix file missing"
-fi
-
-# Check if namespace fix is applied to build.gradle.kts
-if grep -q "plugin_namespace_fix.gradle" android/build.gradle.kts; then
-  log "✅ Plugin namespace fix applied to build.gradle.kts"
-else
-  log "❌ Plugin namespace fix not applied to build.gradle.kts"
+  log "❌ Plugin namespace fixes not applied to build.gradle.kts"
 fi
 
 # Check gradle.properties for namespace configurations
