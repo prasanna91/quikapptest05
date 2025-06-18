@@ -1,10 +1,10 @@
 class EnvConfig {
   static const String appName = 'Garbcode App';
-  static const String orgName = 'Garbcode';
-  static const String webUrl = 'https://garbcode.com';
+  static const String orgName = 'Garbcode Apparels Private Limited';
+  static const String webUrl = 'https://garbcode.com/';
   static const String pkgName = 'com.garbcode.garbcodeapp';
   static const String bundleId = 'com.garbcode.garbcodeapp';
-  static const String emailId = 'test@garbcode.com';
+  static const String emailId = 'prasannasrinivasan32@gmail.com';
   static const bool isChatbot = false;
   static const bool isDeeplink = false;
   static const bool isSplash = false;
@@ -19,10 +19,8 @@ class EnvConfig {
   static const bool isBiometric = false;
   static const bool isCalendar = false;
   static const bool isStorage = false;
-  static const String logoUrl =
-      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
-  static const String splashUrl =
-      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
+  static const String logoUrl = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
+  static const String splashUrl = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
   static const String splashBg = '';
   static const String splashBgColor = '#cbdbf5';
   static const String splashTagline = 'Welcome to Garbcode';
@@ -41,10 +39,4 @@ class EnvConfig {
   static const String bottommenuIconPosition = 'above';
   static const String bottommenuVisibleOn = 'all';
   static const bool pushNotify = false;
-
-  // Firebase configuration URLs
-  static const String firebaseConfigAndroid =
-      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/firebase-config-android.json';
-  static const String firebaseConfigIos =
-      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/firebase-config-ios.json';
 }

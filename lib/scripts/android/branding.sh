@@ -1,48 +1,94 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-log() { echo "[BRANDING][$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
+# Load environment variables
+source ./lib/config/admin_config.env
 
-# Debug: Show environment variables
-log "Debug: SPLASH_URL='${SPLASH_URL:-[NOT SET]}'"
-log "Debug: SPLASH='${SPLASH:-[NOT SET]}'"
+# Log function
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
 
-mkdir -p assets
-mkdir -p assets/images
+# Error handling
+handle_error() {
+    log "❌ Error: $1"
+    exit 1
+}
 
-# Download logo and splash images
-if [ -n "${LOGO_URL:-}" ]; then
-  log "Downloading logo from $LOGO_URL"
-  curl -sSL "$LOGO_URL" -o assets/images/logo.png || log "[WARN] Failed to download logo."
-  
-  # Generate launcher icons using flutter_launcher_icons
-  if command -v flutter >/dev/null 2>&1; then
-    log "Generating launcher icons from logo..."
-    # First ensure dependencies are available
-    flutter pub get >/dev/null 2>&1 || true
-    # Check if flutter_launcher_icons is available
-    if flutter pub deps | grep -q "flutter_launcher_icons"; then
-      flutter pub run flutter_launcher_icons:main || log "[WARN] flutter_launcher_icons failed."
-    else
-      log "[WARN] flutter_launcher_icons not found in dependencies. Skipping icon generation."
+# Trap errors
+trap 'handle_error "Branding failed at line $LINENO"' ERR
+
+# Start branding process
+log "🎨 Starting branding process for $APP_NAME"
+
+# Create necessary directories
+mkdir -p android/app/src/main/res/mipmap-{hdpi,mdpi,xhdpi,xxhdpi,xxxhdpi}
+mkdir -p android/app/src/main/res/drawable
+
+# Download and process app icon
+if [ -n "$LOGO_URL" ]; then
+    log "📥 Downloading app icon from $LOGO_URL"
+    curl -L "$LOGO_URL" -o temp_icon.png || handle_error "Failed to download app icon"
+    
+    # Convert icon to different sizes
+    log "🖼️ Converting app icon to different sizes"
+    convert temp_icon.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+    convert temp_icon.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+    convert temp_icon.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+    convert temp_icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+    convert temp_icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+    
+    rm temp_icon.png
+fi
+
+# Handle splash screen
+if [ "$IS_SPLASH" = "true" ]; then
+    log "🎨 Setting up splash screen"
+    
+    # Create splash screen drawable
+    cat > android/app/src/main/res/drawable/launch_background.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <color android:color="${SPLASH_BG_COLOR:-#FFFFFF}"/>
+    </item>
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/splash"/>
+    </item>
+    <item android:top="60%">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="${SPLASH_TAGLINE:-}"
+            android:textColor="${SPLASH_TAGLINE_COLOR:-#000000}"
+            android:textSize="18sp"
+            android:gravity="center"/>
+    </item>
+</layer-list>
+EOF
+
+    # Download splash image if provided
+    if [ -n "$SPLASH_URL" ]; then
+        log "📥 Downloading splash image from $SPLASH_URL"
+        curl -L "$SPLASH_URL" -o temp_splash.png || handle_error "Failed to download splash image"
+        
+        # Convert splash to different sizes
+        log "🖼️ Converting splash image to different sizes"
+        convert temp_splash.png -resize 320x320 android/app/src/main/res/mipmap-mdpi/splash.png
+        convert temp_splash.png -resize 480x480 android/app/src/main/res/mipmap-hdpi/splash.png
+        convert temp_splash.png -resize 640x640 android/app/src/main/res/mipmap-xhdpi/splash.png
+        convert temp_splash.png -resize 960x960 android/app/src/main/res/mipmap-xxhdpi/splash.png
+        convert temp_splash.png -resize 1280x1280 android/app/src/main/res/mipmap-xxxhdpi/splash.png
+        
+        rm temp_splash.png
     fi
-  else
-    log "[WARN] Flutter not available. Skipping icon generation."
-  fi
 fi
 
-# Properly resolve SPLASH_URL - handle case where SPLASH_URL contains variable expression
-if [[ "${SPLASH_URL:-}" == *'${SPLASH'* ]]; then
-  # SPLASH_URL contains a variable expression, use SPLASH instead
-  SPLASH_URL_RESOLVED="${SPLASH:-https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png}"
-else
-  # SPLASH_URL is a direct value
-  SPLASH_URL_RESOLVED="${SPLASH_URL:-${SPLASH:-https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png}}"
-fi
-log "Debug: SPLASH_URL_RESOLVED='$SPLASH_URL_RESOLVED'"
-if [ -n "$SPLASH_URL_RESOLVED" ]; then
-  log "Downloading splash from $SPLASH_URL_RESOLVED"
-  curl -sSL "$SPLASH_URL_RESOLVED" -o assets/splash.png || log "[WARN] Failed to download splash image."
-fi
+# Update AndroidManifest.xml with branding
+log "📝 Updating AndroidManifest.xml"
+sed -i '' "s/android:label=\"[^\"]*\"/android:label=\"$APP_NAME\"/g" android/app/src/main/AndroidManifest.xml
 
-log "Branding and splash assets updated." 
+log "✅ Branding process completed successfully!"
+exit 0 

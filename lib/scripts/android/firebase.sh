@@ -1,39 +1,115 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-log() { echo "[FIREBASE][$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
+# Load environment variables
+source ./lib/config/admin_config.env
 
-# Function to send Firebase guidance email
-send_firebase_guidance() {
-  bash lib/scripts/utils/send_email.sh "Firebase Error" "Android-Publish" "" "" "" "#" "#" "firebase_guidance"
+# Log function
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-if [[ "${PUSH_NOTIFY:-false}" == "true" ]]; then
-  if [ -n "${firebase_config_android:-}" ]; then
-    log "Downloading google-services.json for Firebase..."
-    mkdir -p android/app assets
-    if [ -f android/app/google-services.json ]; then
-      rm -f android/app/google-services.json
-    fi
-    if [ -f assets/google-services.json ]; then
-      rm -f assets/google-services.json
-    fi
-    
-    # URL encode the config URL
-    ENCODED_URL=$(echo "$firebase_config_android" | sed 's/ /%20/g; s/(/%28/g; s/)/%29/g')
-    
-    wget --tries=3 --wait=5 -O android/app/google-services.json "$ENCODED_URL" || {
-      log "[WARN] Failed to download google-services.json after 3 attempts. Sending Firebase guidance email."
-      send_firebase_guidance
-      exit 1
-    }
-    cp android/app/google-services.json assets/google-services.json
-    log "Firebase config injected."
-  else
-    log "[WARN] firebase_config_android not set. Sending Firebase guidance email."
-    send_firebase_guidance
+# Error handling
+handle_error() {
+    log "❌ Error: $1"
     exit 1
-  fi
-else
-  log "PUSH_NOTIFY is false; skipping Firebase config."
-fi 
+}
+
+# Trap errors
+trap 'handle_error "Firebase setup failed at line $LINENO"' ERR
+
+# Start Firebase setup
+log "🔥 Starting Firebase setup for $APP_NAME"
+
+# Create necessary directories
+mkdir -p android/app/src/main/assets
+
+# Download Firebase config
+if [ -n "$firebase_config_android" ]; then
+    log "📥 Downloading Firebase config from $firebase_config_android"
+    curl -L "$firebase_config_android" -o android/app/google-services.json || handle_error "Failed to download Firebase config"
+    
+    # Validate JSON format
+    if ! jq empty android/app/google-services.json 2>/dev/null; then
+        handle_error "Invalid Firebase config JSON format"
+    fi
+    
+    # Verify package name matches
+    CONFIG_PACKAGE=$(jq -r '.client[0].client_info.android_client_info.package_name' android/app/google-services.json)
+    if [ "$CONFIG_PACKAGE" != "$PKG_NAME" ]; then
+        handle_error "Firebase config package name ($CONFIG_PACKAGE) does not match app package name ($PKG_NAME)"
+    fi
+fi
+
+# Update build.gradle.kts with Firebase dependencies
+log "📝 Updating build.gradle.kts with Firebase dependencies"
+cat > android/app/build.gradle.kts << EOF
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("com.google.gms.google-services")
+}
+
+android {
+    namespace = "$PKG_NAME"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "$PKG_NAME"
+        minSdk = 21
+        targetSdk = 34
+        versionCode = $VERSION_CODE
+        versionName = "$VERSION_NAME"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-crashlytics")
+}
+EOF
+
+# Update project-level build.gradle.kts
+log "📝 Updating project-level build.gradle.kts"
+cat > android/build.gradle.kts << EOF
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.2.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
+        classpath("com.google.gms:google-services:4.4.1")
+        classpath("com.google.firebase:firebase-crashlytics-gradle:2.9.9")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+EOF
+
+log "✅ Firebase setup completed successfully!"
+exit 0 
