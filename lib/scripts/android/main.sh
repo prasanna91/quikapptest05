@@ -383,25 +383,30 @@ log "Updating local.properties with correct Flutter SDK path..."
 # Try multiple methods to find Flutter SDK path
 FLUTTER_ROOT_PATH=""
 
-# Method 1: Use FLUTTER_ROOT environment variable if available
-if [ -n "${FLUTTER_ROOT:-}" ]; then
+# Method 1: Use FLUTTER_ROOT environment variable if available (Codemagic sets this)
+if [ -n "${FLUTTER_ROOT:-}" ] && [ -d "${FLUTTER_ROOT:-}" ]; then
   FLUTTER_ROOT_PATH="$FLUTTER_ROOT"
   log "Using FLUTTER_ROOT environment variable: $FLUTTER_ROOT_PATH"
-elif [ -n "${FLUTTER_HOME:-}" ]; then
+elif [ -n "${FLUTTER_HOME:-}" ] && [ -d "${FLUTTER_HOME:-}" ]; then
   FLUTTER_ROOT_PATH="$FLUTTER_HOME"
   log "Using FLUTTER_HOME environment variable: $FLUTTER_ROOT_PATH"
 else
   # Method 2: Get from flutter command location
   FLUTTER_BIN=$(which flutter 2>/dev/null)
   if [ -n "$FLUTTER_BIN" ]; then
+    # Handle both direct flutter binary and symlinks
+    if [ -L "$FLUTTER_BIN" ]; then
+      # If it's a symlink, resolve it
+      FLUTTER_BIN=$(readlink "$FLUTTER_BIN" 2>/dev/null || echo "$FLUTTER_BIN")
+    fi
     FLUTTER_ROOT_PATH=$(dirname "$(dirname "$FLUTTER_BIN")")
     log "Detected Flutter SDK from flutter command: $FLUTTER_ROOT_PATH"
   fi
 fi
 
-# Method 3: Fallback to common Codemagic paths
+# Method 3: Fallback to common Codemagic and local paths
 if [ -z "$FLUTTER_ROOT_PATH" ] || [ ! -d "$FLUTTER_ROOT_PATH" ]; then
-  for path in "/usr/local/flutter" "/opt/flutter" "/home/builder/programs/flutter"; do
+  for path in "/Users/builder/programs/flutter" "/usr/local/flutter" "/opt/flutter" "/home/builder/programs/flutter"; do
     if [ -d "$path" ]; then
       FLUTTER_ROOT_PATH="$path"
       log "Using fallback Flutter path: $FLUTTER_ROOT_PATH"
@@ -834,31 +839,85 @@ fi
 
 # Fix namespace issues for plugins (AGP 8.x compatibility)
 log "Fixing plugin namespace compatibility for AGP 8.x..."
-if [ -f "android/build.gradle.kts" ]; then
-  # Add namespace configuration for flutter_inappwebview plugin
-  if ! grep -q "flutter_inappwebview.*namespace" android/build.gradle.kts; then
-    log "Adding namespace fix for flutter_inappwebview plugin..."
-    # Add the namespace fix to the existing subprojects block
+
+# Add namespace configuration to gradle.properties for flutter_inappwebview
+if [ -f "android/gradle.properties" ]; then
+  if ! grep -q "flutter_inappwebview.namespace" android/gradle.properties; then
+    log "Adding flutter_inappwebview namespace to gradle.properties..."
+    echo "" >> android/gradle.properties
+    echo "# Plugin namespace fixes for AGP 8.x compatibility" >> android/gradle.properties
+    echo "flutter_inappwebview.namespace=com.pichillilorenzo.flutter_inappwebview" >> android/gradle.properties
+    log "Added flutter_inappwebview namespace configuration"
+  fi
+fi
+
+# Update flutter_inappwebview version in pubspec.yaml to a more recent version
+if [ -f "pubspec.yaml" ]; then
+  if grep -q "flutter_inappwebview:" pubspec.yaml; then
+    log "Updating flutter_inappwebview to newer version for AGP 8.x compatibility..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-      sed -i '' '/subprojects {/a\
-    // Add namespace for flutter_inappwebview\
-    if (project.name == "flutter_inappwebview") {\
-        project.android {\
-            namespace = "com.pichillilorenzo.flutter_inappwebview"\
-        }\
-    }\
-' android/build.gradle.kts
+      sed -i '' 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.1.5/' pubspec.yaml
     else
-      sed -i '/subprojects {/a\
-    // Add namespace for flutter_inappwebview\
-    if (project.name == "flutter_inappwebview") {\
-        project.android {\
-            namespace = "com.pichillilorenzo.flutter_inappwebview"\
-        }\
-    }\
-' android/build.gradle.kts
+      sed -i 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.1.5/' pubspec.yaml
     fi
-    log "Added flutter_inappwebview namespace fix"
+    log "Updated flutter_inappwebview version to 6.1.5"
+    
+    # Update Flutter dependencies after version change
+    log "Updating Flutter dependencies after plugin version changes..."
+    flutter pub get
+  fi
+fi
+
+# Create a comprehensive namespace fix file for problematic plugins
+log "Creating comprehensive plugin namespace fixes..."
+cat > android/plugin_namespace_fix.gradle << 'EOF'
+// Plugin namespace fixes for AGP 8.x compatibility
+// This file is applied to all subprojects to fix namespace issues
+
+subprojects { project ->
+    afterEvaluate {
+        if (project.hasProperty('android')) {
+            def android = project.android
+            
+            // Fix namespace for flutter_inappwebview
+            if (project.name == 'flutter_inappwebview' && !android.hasProperty('namespace')) {
+                android.namespace = 'com.pichillilorenzo.flutter_inappwebview'
+            }
+            
+            // Fix namespace for other common plugins that might need it
+            if (project.name == 'flutter_local_notifications' && !android.hasProperty('namespace')) {
+                android.namespace = 'com.dexterous.flutterlocalnotifications'
+            }
+            
+            if (project.name == 'permission_handler_android' && !android.hasProperty('namespace')) {
+                android.namespace = 'com.baseflow.permissionhandler'
+            }
+            
+            if (project.name == 'url_launcher_android' && !android.hasProperty('namespace')) {
+                android.namespace = 'io.flutter.plugins.urllauncher'
+            }
+            
+            if (project.name == 'package_info_plus' && !android.hasProperty('namespace')) {
+                android.namespace = 'dev.fluttercommunity.plus.packageinfo'
+            }
+            
+            if (project.name == 'shared_preferences_android' && !android.hasProperty('namespace')) {
+                android.namespace = 'io.flutter.plugins.sharedpreferences'
+            }
+        }
+    }
+}
+EOF
+
+# Apply the namespace fix to the root build.gradle.kts
+if [ -f "android/build.gradle.kts" ]; then
+  if ! grep -q "plugin_namespace_fix.gradle" android/build.gradle.kts; then
+    log "Applying comprehensive plugin namespace fixes..."
+    # Add the apply statement at the end of the file
+    echo "" >> android/build.gradle.kts
+    echo "// Apply plugin namespace fixes" >> android/build.gradle.kts
+    echo "apply(from = \"plugin_namespace_fix.gradle\")" >> android/build.gradle.kts
+    log "Applied comprehensive plugin namespace fixes"
   fi
 fi
 
@@ -1128,7 +1187,42 @@ env | grep -i flutter || log "No Flutter-related environment variables found"
 
 log "=== End Pre-Build Verification ==="
 
+# Final validation before build
+log "=== Final Build Environment Validation ==="
+log "Checking critical files and configurations..."
+
+# Check pubspec.yaml for updated dependencies
+log "Current flutter_inappwebview version in pubspec.yaml:"
+grep "flutter_inappwebview:" pubspec.yaml || log "flutter_inappwebview not found in pubspec.yaml"
+
+# Check if namespace fix file was created
+if [ -f "android/plugin_namespace_fix.gradle" ]; then
+  log "✅ Plugin namespace fix file created"
+else
+  log "❌ Plugin namespace fix file missing"
+fi
+
+# Check if namespace fix is applied to build.gradle.kts
+if grep -q "plugin_namespace_fix.gradle" android/build.gradle.kts; then
+  log "✅ Plugin namespace fix applied to build.gradle.kts"
+else
+  log "❌ Plugin namespace fix not applied to build.gradle.kts"
+fi
+
+# Check gradle.properties for namespace configurations
+if grep -q "flutter_inappwebview.namespace" android/gradle.properties; then
+  log "✅ flutter_inappwebview namespace in gradle.properties"
+else
+  log "ℹ️ flutter_inappwebview namespace not in gradle.properties (using .gradle file instead)"
+fi
+
+log "=== End Final Validation ==="
+
 # Flutter build
+# Final dependency update before build
+log "Final Flutter dependency update before build..."
+flutter pub get
+
 log "Building Flutter Android app..."
 # Use flutter build apk instead of flutter build android
 flutter build apk --release
