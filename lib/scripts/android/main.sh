@@ -935,6 +935,110 @@ else
 fi
 log "=== End local.properties content ==="
 
+# Clean Gradle cache to ensure fresh build with new local.properties
+log "Cleaning Gradle cache and wrapper..."
+if [ -d "android/.gradle" ]; then
+  rm -rf android/.gradle
+  log "Removed android/.gradle directory"
+fi
+
+if [ -d "android/app/.gradle" ]; then
+  rm -rf android/app/.gradle
+  log "Removed android/app/.gradle directory"
+fi
+
+# Also clean any cached Gradle wrapper
+if [ -d "android/gradle" ]; then
+  rm -rf android/gradle/wrapper
+  log "Removed Gradle wrapper cache"
+fi
+
+# Verify the Flutter Gradle file exists at the expected location
+EXPECTED_FLUTTER_GRADLE="$FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle"
+log "Verifying Flutter Gradle file exists at: $EXPECTED_FLUTTER_GRADLE"
+if [ -f "$EXPECTED_FLUTTER_GRADLE" ]; then
+  log "✅ Flutter Gradle file found"
+else
+  log "❌ Flutter Gradle file NOT found at expected location"
+  log "Searching for flutter.gradle in Flutter SDK..."
+  find "$FLUTTER_ROOT_PATH" -name "flutter.gradle" -type f 2>/dev/null || true
+  
+  log "Listing contents of $FLUTTER_ROOT_PATH/packages/flutter_tools/:"
+  ls -la "$FLUTTER_ROOT_PATH/packages/flutter_tools/" || true
+  
+  # Try alternative Flutter SDK detection
+  log "Trying alternative Flutter SDK paths..."
+  for alt_path in "/usr/local/flutter" "/opt/flutter" "/home/builder/programs/flutter" "$(dirname "$(dirname "$(which flutter)")")"; do
+    if [ -f "$alt_path/packages/flutter_tools/gradle/flutter.gradle" ]; then
+      log "Found alternative Flutter SDK at: $alt_path"
+      FLUTTER_ROOT_PATH="$alt_path"
+      # Update local.properties with the working path
+      cat > android/local.properties << EOF
+sdk.dir=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}
+flutter.sdk=$FLUTTER_ROOT_PATH
+flutter.buildMode=release
+flutter.versionName=$VERSION_NAME
+flutter.versionCode=$VERSION_CODE
+EOF
+      log "Updated local.properties with working Flutter SDK path: $FLUTTER_ROOT_PATH"
+      break
+    fi
+  done
+fi
+
+# Force regenerate settings.gradle.kts with correct Flutter SDK path
+log "Regenerating settings.gradle.kts with correct Flutter SDK path..."
+cat > android/settings.gradle.kts << EOF
+pluginManagement {
+    val flutterSdkPath = run {
+        val properties = java.util.Properties()
+        file("local.properties").inputStream().use { properties.load(it) }
+        val flutterSdkPath = properties.getProperty("flutter.sdk")
+        require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
+        flutterSdkPath
+    }
+
+    includeBuild("\$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id("dev.flutter.flutter-plugin-loader") version "1.0.0"
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+}
+
+include(":app")
+EOF
+
+# Debug: Show what Gradle will try to read
+log "=== Debug: Regenerated settings.gradle.kts content ==="
+cat android/settings.gradle.kts
+log "=== End settings.gradle.kts content ==="
+
+# Final verification before build
+log "=== Final Pre-Build Verification ==="
+log "Flutter SDK Path: $FLUTTER_ROOT_PATH"
+log "Flutter Gradle File: $FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle"
+if [ -f "$FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle" ]; then
+  log "✅ Flutter Gradle file verified"
+else
+  log "❌ Flutter Gradle file still missing - build will likely fail"
+  exit 1
+fi
+
+log "Local properties file:"
+cat android/local.properties
+
+log "Settings gradle file:"
+head -10 android/settings.gradle.kts
+log "=== End Pre-Build Verification ==="
+
 # Flutter build
 log "Building Flutter Android app..."
 # Use flutter build apk instead of flutter build android
