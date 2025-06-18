@@ -15,7 +15,7 @@ export PROJECT_ROOT
 UTILS_DIR="$PROJECT_ROOT/lib/scripts/utils"
 export UTILS_DIR
 
-# Define a log file for the entire build process
+# Define a log file for the entire build process.
 # shellcheck disable=SC2155
 export BUILD_LOG_FILE="$PROJECT_ROOT/build_android_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$BUILD_LOG_FILE") 2>&1 # Redirect all stdout and stderr to the log file, and also to console
