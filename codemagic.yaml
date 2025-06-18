@@ -4,8 +4,6 @@ workflows:
     environment:
       flutter: 3.32.2
       java: 17
-      android_sdk: 34
-      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME:-1.0.22}"
         VERSION_CODE: "${VERSION_CODE:-27}"
@@ -64,8 +62,6 @@ workflows:
     environment:
       flutter: 3.32.2
       java: 17
-      android_sdk: 34
-      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -125,8 +121,6 @@ workflows:
     environment:
       flutter: 3.32.2
       java: 17
-      android_sdk: 34
-      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -191,8 +185,6 @@ workflows:
     environment:
       flutter: 3.32.2
       java: 17
-      android_sdk: 34
-      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -327,8 +319,6 @@ workflows:
     environment:
       flutter: 3.32.2
       java: 17
-      android_sdk: 34
-      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
