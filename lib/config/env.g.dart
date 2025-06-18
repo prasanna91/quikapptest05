@@ -3,15 +3,15 @@ class Env {
   static const String exportWORKFLOW_ID = "android-free";
   static const String exportVERSION_NAME = "0.0.1-test";
   static const String exportVERSION_CODE = "1";
-  static const String exportAPP_NAME = "Test App";
-  static const String exportORG_NAME = "Test Org";
-  static const String exportWEB_URL = "https://example.com/";
+  static const String exportAPP_NAME = "QuikApp";
+  static const String exportORG_NAME = "QuikApp";
+  static const String exportWEB_URL = "https://quikapp.co";
   static const String exportPKG_NAME = "com.example.testapp";
   static const String exportBUNDLE_ID = "com.example.testapp";
-  static const String exportEMAIL_ID = "test@example.com";
+  static const String exportEMAIL_ID = "support@quikapp.co";
   static const String exportPUSH_NOTIFY = "false";
   static const String exportIS_CHATBOT = "false";
-  static const String exportIS_DEEPLINK = "false";
+  static const String exportIS_DOMAIN_URL = "false";
   static const String exportIS_SPLASH = "false";
   static const String exportIS_PULLDOWN = "false";
   static const String exportIS_BOTTOMMENU = "false";
@@ -32,7 +32,9 @@ class Env {
   static const String exportSPLASH_TAGLINE_COLOR = "#333333";
   static const String exportSPLASH_ANIMATION = "none";
   static const String exportSPLASH_DURATION = "2";
-  static const String exportBOTTOMMENU_ITEMS = "'[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'";
+  static const String exportBOTTOMMENU_ITEMS = """"
+  '[{"label": "Home", "icon": "home", "url": "https://example.com/"}]'
+  """;
   static const String exportBOTTOMMENU_BG_COLOR = "#FFFFFF";
   static const String exportBOTTOMMENU_ICON_COLOR = "#888888";
   static const String exportBOTTOMMENU_TEXT_COLOR = "#888888";
@@ -56,5 +58,5 @@ class Env {
   static const String exportKEY_STORE = "https://example.com/keystore.jks";
   static const String exportCM_KEYSTORE_PASSWORD = "testpassword";
   static const String exportCM_KEY_ALIAS = "testalias";
-  static const String exportCM_KEY_PASSWORD = "testpassword" ";
+  static const String exportCM_KEY_PASSWORD = "testpassword";
 }

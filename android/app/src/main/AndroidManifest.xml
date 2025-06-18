@@ -4,7 +4,7 @@
     <!-- PERMISSIONS_PLACEHOLDER -->
 
     <application
-        android:label="QuikApp"
+        android:label=""
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

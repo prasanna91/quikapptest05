@@ -83,7 +83,7 @@ update_pubspec() {
         cross_platform_sed "/# FLUTTER_CHAT_UI_DEPENDENCY_PLACEHOLDER/d" "$pubspec_file"
     fi
     
-    if [ "${IS_DEEPLINK:-}" = "true" ]; then
+    if [ "${IS_DOMAIN_URL:-}" = "true" ]; then
         cross_platform_sed "s/# UNI_LINKS_DEPENDENCY_PLACEHOLDER/uni_links: ^0.5.1/" "$pubspec_file"
     else
         cross_platform_sed "/# UNI_LINKS_DEPENDENCY_PLACEHOLDER/d" "$pubspec_file"

@@ -7,15 +7,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:quikapp/module/myapp.dart';
 
-import 'package:quikapptest05/main.dart';
-import 'package:quikapptest05/module/myapp.dart';
+
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      MyApp(
+      const MyApp(
         webUrl: 'https://example.com',
         isBottomMenu: false,
         isSplash: false,
@@ -24,7 +24,7 @@ void main() {
         splashDuration: 1,
         splashAnimation: 'fade',
         bottomMenuItems: '[]',
-        isDeeplink: false,
+        isDomainUrl: false,
         backgroundColor: '#FFFFFF',
         activeTabColor: '#000000',
         textColor: '#000000',
@@ -32,7 +32,7 @@ void main() {
         iconPosition: 'above',
         taglineColor: '#000000',
         spbgColor: '#FFFFFF',
-        isLoadIndicator: false,
+        isLoadIndicator: false, splashTagline: '',
       ),
     );
 

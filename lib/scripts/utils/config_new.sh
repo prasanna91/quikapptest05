@@ -12,7 +12,7 @@ BUNDLE_ID=${BUNDLE_ID:-"com.quikapp.app"}
 EMAIL_ID=${EMAIL_ID:-"admin@quikapp.co"}
 PUSH_NOTIFY=${PUSH_NOTIFY:-"false"}
 IS_CHATBOT=${IS_CHATBOT:-"false"}
-IS_DEEPLINK=${IS_DEEPLINK:-"false"}
+IS_DOMAIN_URL=${IS_DOMAIN_URL:-"false"}
 IS_SPLASH=${IS_SPLASH:-"false"}
 IS_PULLDOWN=${IS_PULLDOWN:-"false"}
 IS_BOTTOMMENU=${IS_BOTTOMMENU:-"false"}
@@ -146,7 +146,7 @@ class Environment {
   static const String emailId = '${EMAIL_ID}';
   static const bool pushNotify = ${PUSH_NOTIFY};
   static const bool isChatbot = ${IS_CHATBOT};
-  static const bool isDeeplink = ${IS_DEEPLINK};
+  static const bool isDomainUrl = ${IS_DOMAIN_URL};
   static const bool isSplash = ${IS_SPLASH};
   static const bool isPulldown = ${IS_PULLDOWN};
   static const bool isBottomMenu = ${IS_BOTTOMMENU};
@@ -227,7 +227,7 @@ generate_android_manifest() {
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             
-            $( [ "${IS_DEEPLINK}" = "true" ] && echo '
+            $( [ "${IS_DOMAIN_URL}" = "true" ] && echo '
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -387,7 +387,7 @@ dependencies:
   $( [ "${IS_CALENDAR}" = "true" ] && echo "  calendar_events: ^0.0.1" )
   $( [ "${IS_STORAGE}" = "true" ] && echo "  file_picker: ^6.1.1" )
   $( [ "${IS_CHATBOT}" = "true" ] && echo "  flutter_chat_ui: ^1.6.10" )
-  $( [ "${IS_DEEPLINK}" = "true" ] && echo "  uni_links: ^0.5.1" )
+  $( [ "${IS_DOMAIN_URL}" = "true" ] && echo "  uni_links: ^0.5.1" )
   $( [ "${IS_SPLASH}" = "true" ] && echo "  flutter_native_splash: ^2.3.9" )
   $( [ "${IS_PULLDOWN}" = "true" ] && echo "  pull_to_refresh: ^2.0.0" )
   $( [ "${IS_BOTTOMMENU}" = "true" ] && echo "  flutter_svg: ^2.0.9" )

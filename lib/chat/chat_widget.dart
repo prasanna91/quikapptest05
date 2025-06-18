@@ -163,7 +163,7 @@ class _ChatWidgetState extends State<ChatWidget> {
       }
     } else {
       widget.webViewController.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(url)),
+        urlRequest: URLRequest(url: WebUri(url)),
       );
     }
   }

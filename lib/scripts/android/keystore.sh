@@ -1,33 +1,40 @@
 #!/bin/bash
 set -e
 
-# Load environment variables
-source ./lib/config/admin_config.env
+# Load environment variables from Codemagic
+# These variables are injected by codemagic.yaml
+KEY_STORE_URL=${KEY_STORE_URL}
+CM_KEYSTORE_PASSWORD=${CM_KEYSTORE_PASSWORD}
+CM_KEY_ALIAS=${CM_KEY_ALIAS}
+CM_KEY_PASSWORD=${CM_KEY_PASSWORD}
+PKG_NAME=${PKG_NAME}
+VERSION_NAME=${VERSION_NAME}
+VERSION_CODE=${VERSION_CODE}
 
-# Log function
+# Logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Error handling
+# Error handling function
 handle_error() {
-    log "❌ Error: $1"
+    log "ERROR: $1"
     exit 1
 }
 
-# Trap errors
-trap 'handle_error "Keystore setup failed at line $LINENO"' ERR
+# Set up error handling
+trap 'handle_error "Error occurred at line $LINENO"' ERR
 
 # Start keystore setup
-log "🔑 Starting keystore setup for $APP_NAME"
+log "Starting keystore configuration"
 
 # Validate required variables
-if [ -z "$KEY_STORE" ] || [ -z "$CM_KEYSTORE_PASSWORD" ] || [ -z "$CM_KEY_ALIAS" ] || [ -z "$CM_KEY_PASSWORD" ]; then
+if [ -z "$KEY_STORE_URL" ] || [ -z "$CM_KEYSTORE_PASSWORD" ] || [ -z "$CM_KEY_ALIAS" ] || [ -z "$CM_KEY_PASSWORD" ]; then
     handle_error "Missing required keystore variables"
 fi
 
-# Create keystore properties file
-log "📝 Creating keystore.properties file"
+# Create keystore.properties
+log "Creating keystore.properties"
 cat > android/keystore.properties << EOF
 storeFile=keystore.jks
 storePassword=$CM_KEYSTORE_PASSWORD
@@ -36,25 +43,16 @@ keyPassword=$CM_KEY_PASSWORD
 EOF
 
 # Download keystore file
-log "📥 Downloading keystore from $KEY_STORE"
-curl -L "$KEY_STORE" -o android/app/keystore.jks || handle_error "Failed to download keystore"
+log "Downloading keystore from $KEY_STORE_URL"
+curl -L "$KEY_STORE_URL" -o android/app/keystore.jks || handle_error "Failed to download keystore file"
 
 # Verify keystore
-log "🔍 Verifying keystore"
-if ! keytool -list -keystore android/app/keystore.jks -storepass "$CM_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
-    handle_error "Invalid keystore or password"
-fi
+log "Verifying keystore"
+keytool -list -v -keystore android/app/keystore.jks -storepass "$CM_KEYSTORE_PASSWORD" > /dev/null 2>&1 || handle_error "Invalid keystore file or password"
 
-# Update build.gradle.kts with signing config
-log "📝 Updating build.gradle.kts with signing configuration"
+# Update app-level build.gradle.kts
+log "Updating app-level build.gradle.kts with signing configuration"
 cat > android/app/build.gradle.kts << EOF
-import java.util.Properties
-import java.io.FileInputStream
-
-val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = Properties()
-keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -74,10 +72,13 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            val keystoreProperties = rootProject.file("keystore.properties").inputStream().use {
+                java.util.Properties().apply { load(it) }
+            }
             storeFile = file(keystoreProperties["storeFile"] as String)
             storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
         }
     }
 
@@ -104,5 +105,5 @@ dependencies {
 }
 EOF
 
-log "✅ Keystore setup completed successfully!"
+log "Keystore configuration completed successfully"
 exit 0 

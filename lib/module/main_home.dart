@@ -16,6 +16,7 @@ import '/config/env_config.dart';
 import '/services/notification_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -28,7 +29,7 @@ class MainHome extends StatefulWidget {
   final String webUrl;
   final bool isBottomMenu;
   final String bottomMenuItems;
-  final bool isDeeplink;
+  final bool isDomainUrl;
   final String backgroundColor;
   final String activeTabColor;
   final String textColor;
@@ -41,7 +42,7 @@ class MainHome extends StatefulWidget {
       required this.webUrl,
       required this.isBottomMenu,
       required this.bottomMenuItems,
-      required this.isDeeplink,
+      required this.isDomainUrl,
       required this.backgroundColor,
       required this.activeTabColor,
       required this.textColor,
@@ -56,16 +57,16 @@ class MainHome extends StatefulWidget {
 
 class _MainHomeState extends State<MainHome> {
   final GlobalKey webViewKey = GlobalKey();
-  final String BMFont =
-      String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'Public Sans');
-  final double BMFontSize = double.tryParse(
-          String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "14")) ??
-      12;
-  final bool BMisBold =
-      bool.fromEnvironment('BOTTOMMENU_FONT_BOLD', defaultValue: false);
-  final bool BMisItalic =
-      bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: true);
-  final bool isChatBot = bool.fromEnvironment('IS_CHATBOT', defaultValue: true);
+  // final String BMFont =
+  //     String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'Public Sans');
+  // final double BMFontSize = double.tryParse(
+  //         String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "14")) ??
+  //     12;
+  // final bool BMisBold =
+  //     bool.fromEnvironment('BOTTOMMENU_FONT_BOLD', defaultValue: false);
+  // final bool BMisItalic =
+  //     bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: true);
+  // final bool isChatBot = bool.fromEnvironment('IS_CHATBOT', defaultValue: true);
   late bool isBottomMenu;
 
   // final Color taglineColor = _parseHexColor(const String.fromEnvironment('SPLASH_TAGLINE_COLOR', defaultValue: "#000000"));
@@ -111,23 +112,21 @@ class _MainHomeState extends State<MainHome> {
       const Offset(16, 300); // Initial position for chat toggle
   String get InitialCurrentURL => widget.webUrl;
 
-  void requestPermissions() async {
-    if (isCameraEnabled) await Permission.camera.request();
-    if (isLocationEnabled) await Permission.location.request(); // GPS
-    if (isMicEnabled) await Permission.microphone.request();
-    if (isContactEnabled) await Permission.contacts.request();
-    if (isCalendarEnabled) await Permission.calendar.request();
-    if (isNotificationEnabled) await Permission.notification.request();
+  // Environment variables with defaults
+  final bool pushNotify =
+      bool.fromEnvironment('PUSH_NOTIFY', defaultValue: false);
 
-    // Always request storage (as per your logic)
+  void requestPermissions() async {
+    if (EnvConfig.isCamera) await Permission.camera.request();
+    if (EnvConfig.isLocation) await Permission.location.request();
+    if (EnvConfig.isMic) await Permission.microphone.request();
+    if (EnvConfig.isContact) await Permission.contacts.request();
+    if (EnvConfig.isCalendar) await Permission.calendar.request();
+    if (EnvConfig.isNotification) await Permission.notification.request();
     await Permission.storage.request();
-    if (isBiometricEnabled) {
+    if (EnvConfig.isBiometric) {
       if (Platform.isIOS) {
-        // Use raw value 33 for faceId (iOS)
         await Permission.byValue(33).request();
-      } else if (Platform.isAndroid) {
-        // No need to request biometric permission manually on Android
-        // It's requested automatically by biometric plugins like local_auth
       }
     }
   }
@@ -136,31 +135,35 @@ class _MainHomeState extends State<MainHome> {
   void initState() {
     super.initState();
 
-    if (pushNotify) {
+    if (EnvConfig.pushNotify) {
       try {
-        // Only access FirebaseMessaging after ensuring Firebase is initialized
+        if (!Firebase.apps.isNotEmpty) {
+          Firebase.initializeApp();
+        }
+
         Future.delayed(Duration.zero, () async {
-          final token = await FirebaseMessaging.instance.getToken();
-          if (kDebugMode) {
-            print("🔑 Firebase Token: $token");
+          try {
+            final token = await FirebaseMessaging.instance.getToken();
+            if (kDebugMode) {
+              print("🔑 Firebase Token: $token");
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print("🚨 Error getting Firebase token: $e");
+            }
           }
         });
       } catch (e) {
         if (kDebugMode) {
-          print("🚨 Error accessing FirebaseMessaging.instance: $e");
+          print("🚨 Error initializing Firebase: $e");
         }
-      }
-    } else {
-      if (kDebugMode) {
-        print("📭 pushNotify is false. Skipping FirebaseMessaging setup.");
       }
     }
 
     requestPermissions();
 
-    if (pushNotify == true) {
+    if (EnvConfig.pushNotify) {
       setupFirebaseMessaging();
-      // Handle terminated state
       FirebaseMessaging.instance.getInitialMessage().then((message) async {
         if (message != null) {
           final internalUrl = message.data['url'];
@@ -192,7 +195,7 @@ class _MainHomeState extends State<MainHome> {
     if (!kIsWeb &&
         [TargetPlatform.android, TargetPlatform.iOS]
             .contains(defaultTargetPlatform) &&
-        isPullDown) {
+        EnvConfig.isPulldown) {
       pullToRefreshController = PullToRefreshController(
         options: PullToRefreshOptions(
           color: Colors.blue,
@@ -202,7 +205,7 @@ class _MainHomeState extends State<MainHome> {
             webViewController?.reload();
           } else if (Platform.isIOS) {
             webViewController?.loadUrl(
-              urlRequest: URLRequest(url: Uri.parse(widget.webUrl)),
+              urlRequest: URLRequest(url: WebUri(widget.webUrl)),
             );
           }
         },
@@ -223,7 +226,7 @@ class _MainHomeState extends State<MainHome> {
     final internalUrl = message.data['url'];
     if (internalUrl != null && webViewController != null) {
       webViewController?.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(internalUrl ?? widget.webUrl)),
+        urlRequest: URLRequest(url: WebUri(internalUrl ?? widget.webUrl)),
       );
     }
   }
@@ -272,26 +275,37 @@ class _MainHomeState extends State<MainHome> {
 
   /// ✅ Local push with optional image
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    final android = notification?.android;
-    final imageUrl = notification?.android?.imageUrl ?? message.data['image'];
+    try {
+      final notification = message.notification;
+      final android = notification?.android;
+      final imageUrl = notification?.android?.imageUrl ?? message.data['image'];
 
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'default_channel',
-      'Default',
-      channelDescription: 'Default notification channel',
-      importance: Importance.max,
-      priority: Priority.high,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('id_1', 'View'),
-        AndroidNotificationAction('id_2', 'Dismiss'),
-      ],
-    );
+      if (notification == null) {
+        if (kDebugMode) {
+          print("❌ Notification is null");
+        }
+        return;
+      }
 
-    if (notification != null && android != null) {
+      AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'default_channel',
+        'Default',
+        channelDescription: 'Default notification channel',
+        importance: Importance.max,
+        priority: Priority.high,
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction('id_1', 'View'),
+          AndroidNotificationAction('id_2', 'Dismiss'),
+        ],
+      );
+
       if (imageUrl != null && imageUrl.isNotEmpty) {
         try {
           final http.Response response = await http.get(Uri.parse(imageUrl));
+          if (response.statusCode != 200) {
+            throw Exception('Failed to download image: ${response.statusCode}');
+          }
+
           final tempDir = await getTemporaryDirectory();
           final filePath = '${tempDir.path}/notif_image.jpg';
           final file = File(filePath);
@@ -316,12 +330,9 @@ class _MainHomeState extends State<MainHome> {
           );
         } catch (e) {
           if (kDebugMode) {
-            print('❌ Failed to load image: $e');
+            print('❌ Failed to load notification image: $e');
           }
-          androidDetails = androidDetails;
         }
-      } else {
-        androidDetails = androidDetails;
       }
 
       final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
@@ -337,12 +348,16 @@ class _MainHomeState extends State<MainHome> {
         iOS: iOSDetails,
       );
 
-      flutterLocalNotificationsPlugin.show(
+      await flutterLocalNotificationsPlugin.show(
         notification.hashCode,
         notification.title,
         notification.body,
         platformDetails,
       );
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error showing local notification: $e');
+      }
     }
   }
 
@@ -388,10 +403,12 @@ class _MainHomeState extends State<MainHome> {
   bool hasError = false;
   TextStyle _getMenuTextStyle(bool isActive) {
     return GoogleFonts.getFont(
-      BMFont,
-      fontSize: BMFontSize,
-      fontWeight: BMisBold ? FontWeight.bold : FontWeight.normal,
-      fontStyle: BMisItalic ? FontStyle.italic : FontStyle.normal,
+      EnvConfig.bottommenuFont,
+      fontSize: EnvConfig.bottommenuFontSize,
+      fontWeight:
+          EnvConfig.bottommenuFontBold ? FontWeight.bold : FontWeight.normal,
+      fontStyle:
+          EnvConfig.bottommenuFontItalic ? FontStyle.italic : FontStyle.normal,
       color: isActive
           ? _parseHexColor(widget.activeTabColor)
           : _parseHexColor(widget.textColor),
@@ -431,7 +448,7 @@ class _MainHomeState extends State<MainHome> {
                         InAppWebView(
                           key: webViewKey,
                           initialUrlRequest:
-                              URLRequest(url: Uri.parse(widget.webUrl)),
+                              URLRequest(url: WebUri(widget.webUrl)),
                           initialOptions: options,
                           pullToRefreshController: pullToRefreshController,
                           onWebViewCreated: (controller) {
@@ -498,12 +515,9 @@ class _MainHomeState extends State<MainHome> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(Icons.error_outline,
-                                  size: 64, color: Colors.red),
+                                  size: 48, color: Colors.red),
                               const SizedBox(height: 16),
-                              const Text(
-                                "Oops! Couldn't load the App.",
-                                style: TextStyle(fontSize: 18),
-                              ),
+                              const Text('Failed to load page'),
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: () {
@@ -512,60 +526,50 @@ class _MainHomeState extends State<MainHome> {
                                     isLoading = true;
                                   });
                                   webViewController?.loadUrl(
-                                    urlRequest: URLRequest(
-                                        url: Uri.parse(widget.webUrl)),
+                                    urlRequest:
+                                        URLRequest(url: WebUri(widget.webUrl)),
                                   );
                                 },
-                                child: const Text("Retry"),
+                                child: const Text('Retry'),
                               ),
                             ],
                           ),
                         ),
 
                       // Chat Widget
-                      if (isChatVisible &&
-                          webViewController != null &&
-                          isChatBot)
+                      if (EnvConfig.isChatbot)
                         Positioned(
-                          right: MediaQuery.of(context).size.width * 0.05,
-                          bottom: MediaQuery.of(context).size.height * 0.05,
-                          top: MediaQuery.of(context).size.height * 0.05,
-                          left: MediaQuery.of(context).size.width * 0.05,
-                          child: ChatWidget(
-                            webViewController: webViewController!,
-                            currentUrl: InitialCurrentURL,
-                            onVisibilityChanged: (visible) =>
-                                setState(() => isChatVisible = visible),
+                          right: _dragPosition.dx,
+                          bottom: _dragPosition.dy,
+                          child: GestureDetector(
+                            onPanUpdate: (details) {
+                              setState(() {
+                                _dragPosition += details.delta;
+                              });
+                            },
+                            child: FloatingActionButton(
+                              onPressed: () {
+                                setState(() {
+                                  isChatVisible = !isChatVisible;
+                                });
+                              },
+                              child: const Icon(Icons.chat),
+                            ),
                           ),
                         ),
 
-                      // Chat Toggle Button
-                      if (isChatBot)
+                      if (EnvConfig.isChatbot && isChatVisible)
                         Positioned(
-                          left: _dragPosition.dx,
-                          top: _dragPosition.dy,
-                          child: Draggable(
-                            feedback: chatToggleButton(isChatVisible, null),
-                            childWhenDragging: const SizedBox.shrink(),
-                            onDragEnd: (details) {
+                          right: 16,
+                          bottom: 80,
+                          child: ChatWidget(
+                            webViewController: webViewController!,
+                            currentUrl: InitialCurrentURL,
+                            onVisibilityChanged: (visible) {
                               setState(() {
-                                _dragPosition = Offset(
-                                  details.offset.dx.clamp(
-                                    0.0,
-                                    MediaQuery.of(context).size.width - 60,
-                                  ),
-                                  details.offset.dy.clamp(
-                                    0.0,
-                                    MediaQuery.of(context).size.height - 60,
-                                  ),
-                                );
+                                isChatVisible = visible;
                               });
                             },
-                            child: chatToggleButton(
-                              isChatVisible,
-                              () => setState(
-                                  () => isChatVisible = !isChatVisible),
-                            ),
                           ),
                         ),
                     ],
@@ -575,106 +579,36 @@ class _MainHomeState extends State<MainHome> {
             ],
           ),
         ),
-        bottomNavigationBar: isBottomMenu
-            ? BottomAppBar(
-                height: 70,
-                padding: EdgeInsets.all(0),
-                clipBehavior: Clip.none,
-                notchMargin: 3.0,
-                color: _parseHexColor(widget.backgroundColor),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(
-                    bottomMenuItems.length,
-                    (index) {
-                      final item = bottomMenuItems[index];
-                      final isActive = _currentIndex == index;
-
-                      return FutureBuilder<Widget>(
-                        future: buildMenuIcon(
-                          item,
-                          isActive,
-                          _parseHexColor(widget.activeTabColor),
-                          _parseHexColor(widget.iconColor),
-                        ),
-                        builder: (context, snapshot) {
-                          Widget icon = snapshot.data ??
-                              const SizedBox(width: 24, height: 24);
-                          final label = Text(item['label'],
-                              style: _getMenuTextStyle(isActive));
-
-                          Widget menuItem;
-                          switch (widget.iconPosition) {
-                            case 'above':
-                              menuItem = Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [icon, label],
-                              );
-                            case 'beside':
-                              menuItem = Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  icon,
-                                  const SizedBox(width: 4),
-                                  label
-                                ],
-                              );
-                            case 'only_text':
-                              menuItem = label;
-                            case 'only_icon':
-                              menuItem = icon;
-                            default:
-                              menuItem = Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [icon, label],
-                              );
-                          }
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _currentIndex = index;
-                              });
-                              webViewController?.loadUrl(
-                                urlRequest: URLRequest(
-                                  url: Uri.parse(item['url']),
-                                ),
-                              );
-                            },
-                            child: menuItem,
-                          );
-                        },
+        bottomNavigationBar: widget.isBottomMenu
+            ? BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                  if (bottomMenuItems.isNotEmpty &&
+                      index < bottomMenuItems.length) {
+                    final item = bottomMenuItems[index];
+                    final url = item['url'] as String?;
+                    if (url != null && url.isNotEmpty) {
+                      webViewController?.loadUrl(
+                        urlRequest: URLRequest(url: WebUri(url)),
                       );
-                    },
-                  ),
-                ),
+                    }
+                  }
+                },
+                items: bottomMenuItems.map((item) {
+                  return BottomNavigationBarItem(
+                    icon: Icon(_getIconByName(item['icon'] as String?)),
+                    label: item['label'] as String? ?? '',
+                  );
+                }).toList(),
+                backgroundColor: _parseHexColor(widget.backgroundColor),
+                selectedItemColor: _parseHexColor(widget.activeTabColor),
+                unselectedItemColor: _parseHexColor(widget.textColor),
               )
             : null,
       ),
-    );
-  }
-
-  Widget chatToggleButton(bool isVisible, VoidCallback? onPressed) {
-    return SizedBox(
-      height: 60,
-      width: 60,
-      child: isChatBot == true
-          ? ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-                backgroundColor: isVisible ? Colors.red : Colors.indigo,
-                padding: const EdgeInsets.all(12),
-                elevation: 6,
-                shadowColor: Colors.black54,
-              ),
-              child: Icon(
-                isVisible ? Icons.chat : Icons.chat_bubble_outline,
-                color: Colors.white,
-                size: 25,
-              ),
-            )
-          : null,
     );
   }
 
@@ -728,65 +662,24 @@ class _MainHomeState extends State<MainHome> {
     return Icon(Icons.help_outline);
   }
 
-  Future<void> _handleUrl(String url) async {
+  /// ✅ Update all Uri instances to WebUri
+  void _handleUrl(String url) {
     if (url.startsWith('tel:') ||
         url.startsWith('mailto:') ||
         url.startsWith('whatsapp:') ||
         url.startsWith('sms:')) {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
-      } else {
-        throw 'Could not launch $url';
-      }
+      launchUrl(WebUri(url));
     } else {
       webViewController?.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(url)),
+        urlRequest: URLRequest(url: WebUri(url)),
       );
     }
   }
 
-  Future<void> _handleDeepLink(String url) async {
-    if (url.startsWith('tel:') ||
-        url.startsWith('mailto:') ||
-        url.startsWith('whatsapp:') ||
-        url.startsWith('sms:')) {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
-      } else {
-        throw 'Could not launch $url';
-      }
-    } else {
-      webViewController?.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(url)),
-      );
-    }
-  }
-
-  Future<void> _handleNotificationClick(String url) async {
-    if (url.startsWith('tel:') ||
-        url.startsWith('mailto:') ||
-        url.startsWith('whatsapp:') ||
-        url.startsWith('sms:')) {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
-      } else {
-        throw 'Could not launch $url';
-      }
-    } else {
-      webViewController?.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(url)),
-      );
-    }
-  }
-
-  Future<void> _handleInitialUrl() async {
-    if (_pendingInitialUrl != null) {
-      webViewController?.loadUrl(
-        urlRequest:
-            URLRequest(url: Uri.parse(_pendingInitialUrl ?? widget.webUrl)),
-      );
-      _pendingInitialUrl = null;
-    }
+  void _loadInitialUrl() {
+    webViewController?.loadUrl(
+      urlRequest: URLRequest(url: WebUri(_pendingInitialUrl ?? widget.webUrl)),
+    );
   }
 
   // Add missing getters
@@ -797,7 +690,6 @@ class _MainHomeState extends State<MainHome> {
   bool get isCalendarEnabled => EnvConfig.isCalendar;
   bool get isNotificationEnabled => EnvConfig.isNotification;
   bool get isBiometricEnabled => EnvConfig.isBiometric;
-  bool get pushNotify => EnvConfig.pushNotify;
   bool get isPullDown => EnvConfig.isPulldown;
 
   // Fix URI type mismatches
@@ -808,12 +700,6 @@ class _MainHomeState extends State<MainHome> {
   // Update URL parsing methods
   void _loadUrl(String url) {
     webViewController?.loadUrl(urlRequest: URLRequest(url: _parseWebUri(url)));
-  }
-
-  void _loadInitialUrl() {
-    webViewController?.loadUrl(
-        urlRequest:
-            URLRequest(url: _parseWebUri(_pendingInitialUrl ?? widget.webUrl)));
   }
 }
 

@@ -1,39 +1,83 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-log() { echo "[FIREBASE][$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
+# Load environment variables from Codemagic
+# These variables are injected by codemagic.yaml
+FIREBASE_CONFIG_IOS=${FIREBASE_CONFIG_IOS}
+BUNDLE_ID=${BUNDLE_ID}
 
-# Function to send Firebase guidance email
-send_firebase_guidance() {
-  bash lib/scripts/utils/send_email.sh "Firebase Error" "iOS-Only" "" "" "" "#" "#" "firebase_guidance"
+# Logging function
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-if [[ "${PUSH_NOTIFY:-false}" == "true" ]]; then
-  if [ -n "${firebase_config_ios:-}" ]; then
-    log "Downloading GoogleService-Info.plist for Firebase..."
-    mkdir -p ios/Runner assets
-    if [ -f ios/Runner/GoogleService-Info.plist ]; then
-      rm -f ios/Runner/GoogleService-Info.plist
-    fi
-    if [ -f assets/GoogleService-Info.plist ]; then
-      rm -f assets/GoogleService-Info.plist
-    fi
-    
-    # URL encode the config URL
-    ENCODED_URL=$(echo "$firebase_config_ios" | sed 's/ /%20/g; s/(/%28/g; s/)/%29/g')
-    
-    wget --tries=3 --wait=5 -O ios/Runner/GoogleService-Info.plist "$ENCODED_URL" || {
-      log "[WARN] Failed to download GoogleService-Info.plist after 3 attempts. Sending Firebase guidance email."
-      send_firebase_guidance
-      exit 1
-    }
-    cp ios/Runner/GoogleService-Info.plist assets/GoogleService-Info.plist
-    log "Firebase config injected."
-  else
-    log "[WARN] firebase_config_ios not set. Sending Firebase guidance email."
-    send_firebase_guidance
+# Error handling function
+handle_error() {
+    log "ERROR: $1"
     exit 1
-  fi
-else
-  log "PUSH_NOTIFY is false; skipping Firebase config."
-fi 
+}
+
+# Set up error handling
+trap 'handle_error "Error occurred at line $LINENO"' ERR
+
+# Start Firebase setup
+log "Starting Firebase configuration"
+
+# Validate required variables
+if [ -z "$FIREBASE_CONFIG_IOS" ]; then
+    handle_error "Missing Firebase configuration URL"
+fi
+
+# Create necessary directories
+mkdir -p ios/QuikApp/Supporting\ Files
+
+# Download Firebase configuration
+log "Downloading Firebase configuration from $FIREBASE_CONFIG_IOS"
+curl -L "$FIREBASE_CONFIG_IOS" -o ios/QuikApp/Supporting\ Files/GoogleService-Info.plist || handle_error "Failed to download Firebase configuration"
+
+# Verify Firebase configuration
+if ! plutil -lint ios/QuikApp/Supporting\ Files/GoogleService-Info.plist > /dev/null 2>&1; then
+    handle_error "Invalid Firebase configuration file"
+fi
+
+# Verify bundle ID matches
+CONFIG_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" ios/QuikApp/Supporting\ Files/GoogleService-Info.plist)
+if [ "$CONFIG_BUNDLE_ID" != "$BUNDLE_ID" ]; then
+    handle_error "Firebase configuration bundle ID ($CONFIG_BUNDLE_ID) does not match app bundle ID ($BUNDLE_ID)"
+fi
+
+# Update project.pbxproj with Firebase configuration
+log "Updating project configuration"
+cat > ios/QuikApp.xcodeproj/project.pbxproj << EOF
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 56;
+    objects = {
+        /* Begin PBXBuildFile section */
+        1A2B3C4D5E6F7G8H9I0J1K2L /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9I8H7G6F5E4D3C2B1A0J9K8L7M6N5O4P /* GoogleService-Info.plist */; };
+        /* End PBXBuildFile section */
+
+        /* Begin PBXFileReference section */
+        9I8H7G6F5E4D3C2B1A0J9K8L7M6N5O4P /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+        /* End PBXFileReference section */
+
+        /* Begin PBXGroup section */
+        1A2B3C4D5E6F7G8H9I0J1K2L /* Supporting Files */ = {
+            isa = PBXGroup;
+            children = (
+                9I8H7G6F5E4D3C2B1A0J9K8L7M6N5O4P /* GoogleService-Info.plist */,
+            );
+            name = "Supporting Files";
+            sourceTree = "<group>";
+        };
+        /* End PBXGroup section */
+    };
+    rootObject = 1A2B3C4D5E6F7G8H9I0J1K2L /* Project object */;
+}
+EOF
+
+log "Firebase configuration completed successfully"
+exit 0 

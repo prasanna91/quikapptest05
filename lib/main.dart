@@ -134,7 +134,7 @@ void main() async {
 
     if (EnvConfig.webUrl.isEmpty) {
       debugPrint("❗ Missing WEB_URL environment variable.");
-      runApp(MaterialApp(
+      runApp(const MaterialApp(
         home: Scaffold(
           body: Center(child: Text("WEB_URL not configured.")),
         ),
@@ -155,7 +155,7 @@ void main() async {
       - spbgColor: ${EnvConfig.splashBgColor},
       - isBottomMenu: ${EnvConfig.isBottommenu},
       - bottomMenuItems: ${parseBottomMenuItems(EnvConfig.bottommenuItems)},
-      - isDeeplink: ${EnvConfig.isDeeplink},
+      - isDomainUrl: ${EnvConfig.isDomainUrl},
       - backgroundColor: ${EnvConfig.bottommenuBgColor},
       - activeTabColor: ${EnvConfig.bottommenuActiveTabColor},
       - textColor: ${EnvConfig.bottommenuTextColor},
@@ -169,7 +169,7 @@ void main() async {
         - Contact: ${EnvConfig.isContact}
       """);
 
-    runApp(MyApp(
+    runApp(const MyApp(
       webUrl: EnvConfig.webUrl,
       isSplash: EnvConfig.isSplash,
       splashLogo: EnvConfig.splashUrl,
@@ -180,13 +180,14 @@ void main() async {
       spbgColor: EnvConfig.splashBgColor,
       isBottomMenu: EnvConfig.isBottommenu,
       bottomMenuItems: EnvConfig.bottommenuItems,
-      isDeeplink: EnvConfig.isDeeplink,
+      isDomainUrl: EnvConfig.isDomainUrl,
       backgroundColor: EnvConfig.bottommenuBgColor,
       activeTabColor: EnvConfig.bottommenuActiveTabColor,
       textColor: EnvConfig.bottommenuTextColor,
       iconColor: EnvConfig.bottommenuIconColor,
       iconPosition: EnvConfig.bottommenuIconPosition,
       isLoadIndicator: EnvConfig.isLoadIndicator,
+        splashTagline: EnvConfig.splashTagline,
     ));
   } catch (e, stackTrace) {
     debugPrint("❌ Fatal error during initialization: $e");
@@ -203,19 +204,19 @@ Widget _firebaseErrorScreen(
     {required String title, required String expected, required String actual}) {
   return MaterialApp(
     home: Scaffold(
-      appBar: AppBar(title: Text("Firebase Configuration Error")),
+      appBar: AppBar(title: const Text("Firebase Configuration Error")),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             Text("Expected: $expected"),
             Text("Actual: $actual"),
-            SizedBox(height: 24),
-            Text(
+            const SizedBox(height: 24),
+            const Text(
                 "Please check your Firebase configuration files and make sure they match your app's package name."),
           ],
         ),
@@ -227,18 +228,18 @@ Widget _firebaseErrorScreen(
 Widget _missingFirebaseFileScreen(String fileName) {
   return MaterialApp(
     home: Scaffold(
-      appBar: AppBar(title: Text("Missing Firebase Configuration")),
+      appBar: AppBar(title: const Text("Missing Firebase Configuration")),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Missing Firebase Configuration File",
+            const Text("Missing Firebase Configuration File",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text("The file '$fileName' is missing from your assets."),
-            SizedBox(height: 24),
-            Text("Please add the file to your assets folder and try again."),
+            const SizedBox(height: 24),
+            const Text("Please add the file to your assets folder and try again."),
           ],
         ),
       ),

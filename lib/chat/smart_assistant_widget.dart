@@ -70,7 +70,7 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
     final url = result.url;
     if (url != null && widget.webViewController != null) {
       await widget.webViewController!
-          .loadUrl(urlRequest: URLRequest(url: Uri.parse(url)));
+          .loadUrl(urlRequest: URLRequest(url: WebUri(url)));
 
       // Optionally, scroll to a specific element if necessary
       if (result.title != null) {
@@ -96,7 +96,7 @@ class _SmartAssistantWidgetState extends State<SmartAssistantWidget> {
       }
     } else {
       await widget.webViewController!.loadUrl(
-        urlRequest: URLRequest(url: Uri.parse(url)),
+        urlRequest: URLRequest(url: WebUri(url)),
       );
     }
   }

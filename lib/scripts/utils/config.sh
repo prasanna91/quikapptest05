@@ -21,7 +21,7 @@ export EMAIL_ID=${EMAIL_ID:-"prasannasrinivasan32@gmail.com"}
 # Feature flags
 export PUSH_NOTIFY=${PUSH_NOTIFY:-"false"}
 export IS_CHATBOT=${IS_CHATBOT:-"false"}
-export IS_DEEPLINK=${IS_DEEPLINK:-"false"}
+export IS_DOMAIN_URL=${IS_DOMAIN_URL:-"false"}
 export IS_SPLASH=${IS_SPLASH:-"false"}
 export IS_PULLDOWN=${IS_PULLDOWN:-"false"}
 export IS_BOTTOMMENU=${IS_BOTTOMMENU:-"false"}
@@ -162,7 +162,7 @@ get_project_configurations() {
         "EMAIL_ID:${EMAIL_ID}"
         "PUSH_NOTIFY:${PUSH_NOTIFY}"
         "IS_CHATBOT:${IS_CHATBOT}"
-        "IS_DEEPLINK:${IS_DEEPLINK}"
+        "IS_DOMAIN_URL:${IS_DOMAIN_URL}"
         "IS_SPLASH:${IS_SPLASH}"
         "IS_PULLDOWN:${IS_PULLDOWN}"
         "IS_BOTTOMMENU:${IS_BOTTOMMENU}"
@@ -224,7 +224,7 @@ class EnvConfig {
   static const String bundleId = '${BUNDLE_ID}';
   static const String emailId = '${EMAIL_ID}';
   static const bool isChatbot = ${IS_CHATBOT};
-  static const bool isDeeplink = ${IS_DEEPLINK};
+  static const bool isDomainUrl = ${IS_DOMAIN_URL};
   static const bool isSplash = ${IS_SPLASH};
   static const bool isPulldown = ${IS_PULLDOWN};
   static const bool isBottommenu = ${IS_BOTTOMMENU};

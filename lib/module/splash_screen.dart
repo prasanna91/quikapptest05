@@ -6,10 +6,11 @@ class SplashScreen extends StatefulWidget {
   final String splashLogo;
   final String splashBg;
   final String spbgColor;
+  final String splashTagline;
   final String taglineColor;
 
   final String splashAnimation;
-  const SplashScreen({super.key,  required this.splashLogo, required this.splashBg, required this.splashAnimation, required this.spbgColor, required this.taglineColor});
+  const SplashScreen({super.key,  required this.splashLogo, required this.splashBg, required this.splashAnimation, required this.spbgColor, required this.taglineColor, required this.splashTagline});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -36,8 +37,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    debugPrint('📦 Splash image loaded from: $splashUrl');
-    debugPrint('🎞️ Animation: $splashAnimation');
+    debugPrint('📦 Splash image loaded from: ${widget.splashLogo}');
+    debugPrint('🎞️ Animation: ${widget.splashAnimation}');
 
     _controller = AnimationController(
       vsync: this,
@@ -96,13 +97,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           )
               : const SizedBox.shrink(),
           Center(child: _buildAnimatedLogo()),
-          if (splashTagline.isNotEmpty)
+          if (widget.splashTagline.isNotEmpty)
             Positioned(
               bottom: 60,
               left: 0,
               right: 0,
               child: Text(
-                splashTagline,
+                widget.splashTagline,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,

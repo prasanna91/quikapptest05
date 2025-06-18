@@ -1,170 +1,135 @@
 #!/bin/bash
-set -euo pipefail
-trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
+set -e
 
-# Source local environment variables if available (for local development/testing)
-if [ -f "lib/config/env.sh" ]; then
-  set -a  # automatically export all variables
-  source lib/config/env.sh
-  set +a  # stop automatically exporting
-else
-  # In Codemagic, variables are provided via CM_ENV
-  log "Using Codemagic environment variables (CM_ENV)"
-  # No need to source anything as CM_ENV is already available
-fi
+# Load environment variables from Codemagic
+# These variables are injected by codemagic.yaml
+APP_ID=${APP_ID}
+WORKFLOW_ID=${WORKFLOW_ID}
+BRANCH=${BRANCH}
+VERSION_NAME=${VERSION_NAME}
+VERSION_CODE=${VERSION_CODE}
+APP_NAME=${APP_NAME}
+ORG_NAME=${ORG_NAME}
+WEB_URL=${WEB_URL}
+EMAIL_ID=${EMAIL_ID}
+BUNDLE_ID=${BUNDLE_ID}
 
-# Source common variables with defaults for local/dev builds
-source lib/scripts/utils/variables.sh
+# Feature flags
+PUSH_NOTIFY=${PUSH_NOTIFY}
+IS_CHATBOT=${IS_CHATBOT}
+IS_DOMAIN_URL=${IS_DOMAIN_URL}
+IS_SPLASH=${IS_SPLASH}
+IS_PULLDOWN=${IS_PULLDOWN}
+IS_BOTTOMMENU=${IS_BOTTOMMENU}
+IS_LOAD_IND=${IS_LOAD_IND}
+
+# Permissions
+IS_CAMERA=${IS_CAMERA}
+IS_LOCATION=${IS_LOCATION}
+IS_MIC=${IS_MIC}
+IS_NOTIFICATION=${IS_NOTIFICATION}
+IS_CONTACT=${IS_CONTACT}
+IS_BIOMETRIC=${IS_BIOMETRIC}
+IS_CALENDAR=${IS_CALENDAR}
+IS_STORAGE=${IS_STORAGE}
+
+# Branding
+LOGO_URL=${LOGO_URL}
+SPLASH_URL=${SPLASH_URL}
+SPLASH_BG_URL=${SPLASH_BG_URL}
+SPLASH_BG_COLOR=${SPLASH_BG_COLOR}
+SPLASH_TAGLINE=${SPLASH_TAGLINE}
+SPLASH_TAGLINE_COLOR=${SPLASH_TAGLINE_COLOR}
+SPLASH_ANIMATION=${SPLASH_ANIMATION}
+SPLASH_DURATION=${SPLASH_DURATION}
+
+# Bottom menu
+BOTTOMMENU_ITEMS=${BOTTOMMENU_ITEMS}
+BOTTOMMENU_BG_COLOR=${BOTTOMMENU_BG_COLOR}
+BOTTOMMENU_ICON_COLOR=${BOTTOMMENU_ICON_COLOR}
+BOTTOMMENU_TEXT_COLOR=${BOTTOMMENU_TEXT_COLOR}
+BOTTOMMENU_FONT=${BOTTOMMENU_FONT}
+BOTTOMMENU_FONT_SIZE=${BOTTOMMENU_FONT_SIZE}
+BOTTOMMENU_FONT_BOLD=${BOTTOMMENU_FONT_BOLD}
+BOTTOMMENU_FONT_ITALIC=${BOTTOMMENU_FONT_ITALIC}
+BOTTOMMENU_ACTIVE_TAB_COLOR=${BOTTOMMENU_ACTIVE_TAB_COLOR}
+BOTTOMMENU_ICON_POSITION=${BOTTOMMENU_ICON_POSITION}
+BOTTOMMENU_VISIBLE_ON=${BOTTOMMENU_VISIBLE_ON}
+
+# Firebase
+FIREBASE_CONFIG_IOS=${FIREBASE_CONFIG_IOS}
+
+# iOS Signing
+APPLE_TEAM_ID=${APPLE_TEAM_ID}
+APNS_KEY_ID=${APNS_KEY_ID}
+APNS_AUTH_KEY_URL=${APNS_AUTH_KEY_URL}
+CERT_PASSWORD=${CERT_PASSWORD}
+PROFILE_URL=${PROFILE_URL}
+CERT_CER_URL=${CERT_CER_URL}
+CERT_KEY_URL=${CERT_KEY_URL}
+APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER}
 
 # Logging function
 log() {
-  echo "[IOS][$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-log "Starting iOS-Only workflow (Code Signed IPA)"
+# Error handling function
+handle_error() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Set up error handling
+trap 'handle_error "Error occurred at line $LINENO"' ERR
+
+# Start iOS build
+log "Starting iOS build for $APP_NAME"
 
 # Validate required variables
-REQUIRED_VARS=(
-  "APP_NAME"
-  "BUNDLE_ID"
-  "VERSION_NAME"
-  "VERSION_CODE"
-  "ORG_NAME"
-  "WEB_URL"
-  "EMAIL_ID"
-  "CERT_CER_URL"
-  "CERT_KEY_URL"
-  "PROFILE_URL"
-  "CERT_PASSWORD"
-)
-
-for var in "${REQUIRED_VARS[@]}"; do
-  if [ -z "${!var:-}" ]; then
-    log "[ERROR] Required variable $var is not set."
-    exit 1
-  fi
-done
-
-# Prepare output directory
-mkdir -p "$OUTPUT_DIR/ios"
-
-# Clean old IPA files before build
-log "Cleaning old IPA files in $OUTPUT_DIR/ios/ ..."
-rm -f "$OUTPUT_DIR/ios/"*.ipa || true
-
-# --- Code Signing Setup ---
-log "Setting up code signing..."
-if [ -f "lib/scripts/ios/signing.sh" ]; then
-  log "Generating .p12 for signing..."
-  bash lib/scripts/ios/signing.sh
-else
-  log "[WARN] Signing sub-script not found. Skipping .p12 generation."
-  exit 1
+if [ -z "$BUNDLE_ID" ] || [ -z "$VERSION_NAME" ] || [ -z "$VERSION_CODE" ]; then
+    handle_error "Missing required variables"
 fi
 
-# --- Branding and Assets ---
-log "Setting up branding and assets..."
-if [ -f "lib/scripts/ios/branding.sh" ]; then
-  bash lib/scripts/ios/branding.sh
-else
-  log "[WARN] Branding sub-script not found. Skipping branding setup."
-  exit 1
+# Create necessary directories
+mkdir -p ios/QuikApp/Resources
+mkdir -p ios/QuikApp/Supporting\ Files
+
+# Run sub-scripts
+log "Running branding script"
+./lib/scripts/ios/branding.sh || handle_error "Branding script failed"
+
+log "Running permissions script"
+./lib/scripts/ios/permissions.sh || handle_error "Permissions script failed"
+
+if [ "$FIREBASE_CONFIG_IOS" != "" ]; then
+    log "Running Firebase script"
+    ./lib/scripts/ios/firebase.sh || handle_error "Firebase script failed"
 fi
 
-# --- Firebase Setup (if enabled) ---
-if [ "${PUSH_NOTIFY:-false}" = "true" ]; then
-  log "Setting up Firebase..."
-  if [ -f "lib/scripts/ios/firebase.sh" ]; then
-    bash lib/scripts/ios/firebase.sh
-  else
-    log "[WARN] Firebase sub-script not found. Skipping Firebase setup."
-    exit 1
-  fi
-else
-  log "PUSH_NOTIFY is false; skipping Firebase setup."
-fi
+log "Running signing script"
+./lib/scripts/ios/signing.sh || handle_error "Signing script failed"
 
-# --- Permissions Setup ---
-log "Setting up permissions..."
-if [ -f "lib/scripts/ios/permissions.sh" ]; then
-  bash lib/scripts/ios/permissions.sh
-else
-  log "[WARN] Permissions sub-script not found. Skipping permissions setup."
-fi
-
-# --- Dart Environment Variables ---
-log "Generating Dart environment variables..."
-echo "[DART ENV] Generating Dart env file..."
-bash lib/scripts/utils/gen_dart_env.sh
-
-# --- Dynamic App Name & Bundle ID Injection ---
-log "Updating app name and bundle ID..."
-if [ -n "${APP_NAME:-}" ]; then
-  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" ios/Runner/Info.plist || true
-  /usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME" ios/Runner/Info.plist || true
-  sed -i '' "s/PRODUCT_NAME = .*/PRODUCT_NAME = \"$APP_NAME\"/" macos/Runner/Configs/AppInfo.xcconfig || true
-fi
-if [ -n "${BUNDLE_ID:-}" ]; then
-  sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = \"$BUNDLE_ID\"/" macos/Runner/Configs/AppInfo.xcconfig || true
-fi
-
-# --- Flutter Launcher Icons ---
-log "Generating launcher icons..."
-if command -v flutter >/dev/null 2>&1; then
-  flutter pub run flutter_launcher_icons:main
-else
-  log "[WARN] Flutter not found. Skipping launcher icon generation."
-fi
-
-# --- Flutter Build ---
-log "Building Flutter iOS app..."
-flutter build ios --release --no-codesign
-
-# --- Xcode Build and Export ---
-log "Building and exporting IPA..."
-# Archive the app
-xcodebuild -workspace ios/Runner.xcworkspace \
-  -scheme Runner \
-  -configuration Release \
-  -archivePath "$OUTPUT_DIR/ios/App.xcarchive" \
-  CODE_SIGN_IDENTITY="Apple Distribution" \
-  PROVISIONING_PROFILE_SPECIFIER="Garbcode_App_Store" \
-  archive
+# Build iOS app
+log "Building iOS app"
+xcodebuild -workspace ios/QuikApp.xcworkspace \
+    -scheme QuikApp \
+    -configuration Release \
+    -archivePath build/QuikApp.xcarchive \
+    archive || handle_error "Archive failed"
 
 # Export IPA
+log "Exporting IPA"
 xcodebuild -exportArchive \
-  -archivePath "$OUTPUT_DIR/ios/App.xcarchive" \
-  -exportOptionsPlist ios/ExportOptions.plist \
-  -exportPath "$OUTPUT_DIR/ios/"
+    -archivePath build/QuikApp.xcarchive \
+    -exportOptionsPlist ios/exportOptions.plist \
+    -exportPath build/ios || handle_error "Export failed"
 
-# Find the generated IPA
-IPA_PATH=$(find "$OUTPUT_DIR/ios/" -name '*.ipa' | head -n 1)
-if [ -z "$IPA_PATH" ]; then
-  log "[ERROR] No IPA file found after build."
-  exit 1
+# Send email notification
+if [ "$ENABLE_EMAIL_NOTIFICATIONS" = "true" ]; then
+    log "Sending email notification"
+    ./lib/scripts/utils/send_email.sh "success" || log "Email notification failed"
 fi
 
-log "IPA built successfully at: $IPA_PATH"
-
-# --- Send Notification ---
-if [ -f "lib/scripts/utils/variables.sh" ]; then
-  source lib/scripts/utils/variables.sh
-fi
-
-# Function to send notification email
-send_notification() {
-  local status="$1"
-  local ipa_url="$2"
-  local log_url="$3"
-  local resume_url="$4"
-  bash lib/scripts/utils/send_email.sh "$status" "iOS" "" "" "$ipa_url" "$log_url" "$resume_url"
-}
-
-# After successful build, send success notification
-IPA_URL="$IPA_PATH"
-BUILD_LOG_URL="${BUILD_LOG_URL:-#}"
-RESUME_URL="${RESUME_URL:-#}"
-send_notification "Success" "$IPA_URL" "$BUILD_LOG_URL" "$RESUME_URL"
-
-log "iOS-Only workflow completed successfully."
+log "iOS build completed successfully"
 exit 0 

@@ -6,7 +6,7 @@ class EnvConfig {
   static const String bundleId = 'com.garbcode.garbcodeapp';
   static const String emailId = 'prasannasrinivasan32@gmail.com';
   static const bool isChatbot = false;
-  static const bool isDeeplink = false;
+  static const bool isDomainUrl = false;
   static const bool isSplash = false;
   static const bool isPulldown = false;
   static const bool isBottommenu = false;
@@ -39,4 +39,6 @@ class EnvConfig {
   static const String bottommenuIconPosition = 'above';
   static const String bottommenuVisibleOn = 'all';
   static const bool pushNotify = false;
+  static const String firebaseConfigAndroid = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/google-services-garbcode.json';
+  static const String firebaseConfigIos = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/GoogleService-Info-gc.plist';
 }

@@ -1,53 +1,59 @@
 #!/bin/bash
 set -e
 
-# Load environment variables
-source ./lib/config/admin_config.env
+# Load environment variables from Codemagic
+# These variables are injected by codemagic.yaml
+FIREBASE_CONFIG_ANDROID=${FIREBASE_CONFIG_ANDROID}
+PKG_NAME=${PKG_NAME}
 
-# Log function
+# Logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Error handling
+# Error handling function
 handle_error() {
-    log "❌ Error: $1"
+    log "ERROR: $1"
     exit 1
 }
 
-# Trap errors
-trap 'handle_error "Firebase setup failed at line $LINENO"' ERR
+# Set up error handling
+trap 'handle_error "Error occurred at line $LINENO"' ERR
 
 # Start Firebase setup
-log "🔥 Starting Firebase setup for $APP_NAME"
+log "Starting Firebase configuration"
 
 # Create necessary directories
 mkdir -p android/app/src/main/assets
 
-# Download Firebase config
-if [ -n "$firebase_config_android" ]; then
-    log "📥 Downloading Firebase config from $firebase_config_android"
-    curl -L "$firebase_config_android" -o android/app/google-services.json || handle_error "Failed to download Firebase config"
-    
+# Download Firebase configuration
+if [ -n "$FIREBASE_CONFIG_ANDROID" ]; then
+    log "Downloading Firebase configuration from $FIREBASE_CONFIG_ANDROID"
+    curl -L "$FIREBASE_CONFIG_ANDROID" -o android/app/google-services.json || handle_error "Failed to download Firebase configuration"
+
     # Validate JSON format
-    if ! jq empty android/app/google-services.json 2>/dev/null; then
-        handle_error "Invalid Firebase config JSON format"
+    if ! jq . android/app/google-services.json > /dev/null 2>&1; then
+        handle_error "Invalid Firebase configuration JSON format"
     fi
-    
+
     # Verify package name matches
-    CONFIG_PACKAGE=$(jq -r '.client[0].client_info.android_client_info.package_name' android/app/google-services.json)
-    if [ "$CONFIG_PACKAGE" != "$PKG_NAME" ]; then
-        handle_error "Firebase config package name ($CONFIG_PACKAGE) does not match app package name ($PKG_NAME)"
+    CONFIG_PKG_NAME=$(jq -r '.client[0].client_info.android_client_info.package_name' android/app/google-services.json)
+    if [ "$CONFIG_PKG_NAME" != "$PKG_NAME" ]; then
+        handle_error "Firebase configuration package name ($CONFIG_PKG_NAME) does not match app package name ($PKG_NAME)"
     fi
+else
+    log "WARNING: Firebase configuration URL is not provided, skipping Firebase setup"
+    exit 0
 fi
 
-# Update build.gradle.kts with Firebase dependencies
-log "📝 Updating build.gradle.kts with Firebase dependencies"
+# Update app-level build.gradle.kts
+log "Updating app-level build.gradle.kts"
 cat > android/app/build.gradle.kts << EOF
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -58,8 +64,8 @@ android {
         applicationId = "$PKG_NAME"
         minSdk = 21
         targetSdk = 34
-        versionCode = $VERSION_CODE
-        versionName = "$VERSION_NAME"
+        versionCode = 1
+        versionName = "1.0"
     }
 
     buildTypes {
@@ -80,7 +86,7 @@ android {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-crashlytics")
@@ -88,7 +94,7 @@ dependencies {
 EOF
 
 # Update project-level build.gradle.kts
-log "📝 Updating project-level build.gradle.kts"
+log "Updating project-level build.gradle.kts"
 cat > android/build.gradle.kts << EOF
 buildscript {
     repositories {
@@ -111,5 +117,5 @@ allprojects {
 }
 EOF
 
-log "✅ Firebase setup completed successfully!"
+log "Firebase configuration completed successfully"
 exit 0 

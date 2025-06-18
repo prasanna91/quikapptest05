@@ -1,100 +1,139 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-log() { echo "[SIGNING][$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
+# Load environment variables from Codemagic
+# These variables are injected by codemagic.yaml
+APPLE_TEAM_ID=${APPLE_TEAM_ID}
+APNS_KEY_ID=${APNS_KEY_ID}
+APNS_AUTH_KEY_URL=${APNS_AUTH_KEY_URL}
+CERT_PASSWORD=${CERT_PASSWORD}
+PROFILE_URL=${PROFILE_URL}
+CERT_CER_URL=${CERT_CER_URL}
+CERT_KEY_URL=${CERT_KEY_URL}
+APP_STORE_CONNECT_KEY_IDENTIFIER=${APP_STORE_CONNECT_KEY_IDENTIFIER}
+BUNDLE_ID=${BUNDLE_ID}
 
-# Create output directory if it doesn't exist
-mkdir -p "$OUTPUT_DIR/ios"
-
-# Functions to send guidance emails
-send_cer_guidance() {
-  bash lib/scripts/utils/send_email.sh "iOS Signing Error" "iOS" "" "" "" "#" "#" "cer_guidance"
+# Logging function
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
-send_key_guidance() {
-  bash lib/scripts/utils/send_email.sh "iOS Signing Error" "iOS" "" "" "" "#" "#" "key_guidance"
-}
-send_mobileprovision_guidance() {
-  bash lib/scripts/utils/send_email.sh "iOS Signing Error" "iOS" "" "" "" "#" "#" "mobileprovision_guidance"
-}
 
-# Debug print URLs
-log "CERT_CER_URL: ${CERT_CER_URL:-}"
-log "CERT_KEY_URL: ${CERT_KEY_URL:-}"
-log "PROFILE_URL: ${PROFILE_URL:-}"
-
-# Validate .cer, .key, and .mobileprovision
-if [[ -z "${CERT_CER_URL:-}" ]]; then
-  log "CERT_CER_URL is not set"
-  send_cer_guidance
-  exit 1
-fi
-
-if ! curl -sSL "$CERT_CER_URL" -o "$OUTPUT_DIR/ios/apple_distribution.cer"; then
-  log "Failed to download .cer file from $CERT_CER_URL"
-  send_cer_guidance
-  exit 1
-fi
-
-if [[ -z "${CERT_KEY_URL:-}" ]]; then
-  log "CERT_KEY_URL is not set"
-  send_key_guidance
-  exit 1
-fi
-
-if ! curl -sSL "$CERT_KEY_URL" -o "$OUTPUT_DIR/ios/privatekey.key"; then
-  log "Failed to download .key file from $CERT_KEY_URL"
-  send_key_guidance
-  exit 1
-fi
-
-if [[ -z "${PROFILE_URL:-}" ]]; then
-  log "PROFILE_URL is not set"
-  send_mobileprovision_guidance
-  exit 1
-fi
-
-if ! curl -sSL "$PROFILE_URL" -o "$OUTPUT_DIR/ios/profile.mobileprovision"; then
-  log "Failed to download .mobileprovision file from $PROFILE_URL"
-  send_mobileprovision_guidance
-  exit 1
-fi
-
-# Verify downloaded files
-log "Verifying downloaded files..."
-ls -l "$OUTPUT_DIR/ios/"
-
-# Convert certificate to PEM format if needed
-log "Converting certificate to PEM format..."
-if ! openssl x509 -inform DER -in "$OUTPUT_DIR/ios/apple_distribution.cer" -out "$OUTPUT_DIR/ios/apple_distribution.pem" 2>/dev/null; then
-  # If conversion fails, assume it's already in PEM format
-  cp "$OUTPUT_DIR/ios/apple_distribution.cer" "$OUTPUT_DIR/ios/apple_distribution.pem"
-fi
-
-# Generate .p12
-if command -v openssl >/dev/null 2>&1; then
-  log "Generating .p12 using openssl"
-  if ! openssl pkcs12 -export \
-    -inkey "$OUTPUT_DIR/ios/privatekey.key" \
-    -in "$OUTPUT_DIR/ios/apple_distribution.pem" \
-    -certfile "$OUTPUT_DIR/ios/apple_distribution.pem" \
-    -out "$OUTPUT_DIR/ios/ios_cert.p12" \
-    -passout pass:"$CERT_PASSWORD" 2>&1; then
-    log ".p12 generation failed. Sending all guidance emails."
-    send_cer_guidance
-    send_key_guidance
-    send_mobileprovision_guidance
+# Error handling function
+handle_error() {
+    log "ERROR: $1"
     exit 1
-  fi
-  log "Successfully generated .p12 file"
-else
-  log "openssl not found. Skipping .p12 generation."
-  exit 1
+}
+
+# Set up error handling
+trap 'handle_error "Error occurred at line $LINENO"' ERR
+
+# Start signing setup
+log "Starting iOS signing configuration"
+
+# Validate required variables
+if [ -z "$CERT_CER_URL" ] || [ -z "$CERT_KEY_URL" ] || [ -z "$CERT_PASSWORD" ] || [ -z "$PROFILE_URL" ]; then
+    handle_error "Missing required signing variables"
 fi
 
-# Install the provisioning profile
-log "Installing provisioning profile..."
-mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
-cp "$OUTPUT_DIR/ios/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
+# Create necessary directories
+mkdir -p ios/QuikApp/Supporting\ Files
+mkdir -p ios/QuikApp/Provisioning\ Profiles
 
-log "Code signing setup completed successfully."
+# Download certificates and profiles
+log "Downloading certificates and profiles"
+
+# Download distribution certificate
+curl -L "$CERT_CER_URL" -o ios/QuikApp/Supporting\ Files/distribution.cer || handle_error "Failed to download distribution certificate"
+
+# Download private key
+curl -L "$CERT_KEY_URL" -o ios/QuikApp/Supporting\ Files/private.key || handle_error "Failed to download private key"
+
+# Download provisioning profile
+curl -L "$PROFILE_URL" -o ios/QuikApp/Provisioning\ Profiles/profile.mobileprovision || handle_error "Failed to download provisioning profile"
+
+# Create keychain
+log "Creating keychain"
+security create-keychain -p "$CERT_PASSWORD" build.keychain
+security default-keychain -s build.keychain
+security unlock-keychain -p "$CERT_PASSWORD" build.keychain
+security set-keychain-settings -t 3600 -u build.keychain
+
+# Import certificates
+log "Importing certificates"
+security import ios/QuikApp/Supporting\ Files/distribution.cer -k build.keychain -T /usr/bin/codesign
+security import ios/QuikApp/Supporting\ Files/private.key -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+
+# Install provisioning profile
+log "Installing provisioning profile"
+mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+cp ios/QuikApp/Provisioning\ Profiles/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+# Update project configuration
+log "Updating project configuration"
+cat > ios/QuikApp.xcodeproj/project.pbxproj << EOF
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 56;
+    objects = {
+        /* Begin PBXProject section */
+        1A2B3C4D5E6F7G8H9I0J1K2L /* Project object */ = {
+            isa = PBXProject;
+            attributes = {
+                LastSwiftUpdateCheck = 1500;
+                LastUpgradeCheck = 1500;
+                TargetAttributes = {
+                    9I8H7G6F5E4D3C2B1A0J9K8L7M6N5O4P = {
+                        DevelopmentTeam = $APPLE_TEAM_ID;
+                        ProvisioningStyle = Manual;
+                    };
+                };
+            };
+            buildConfigurationList = 1A2B3C4D5E6F7G8H9I0J1K2L /* Build configuration list for PBXProject */;
+            compatibilityVersion = "Xcode 14.0";
+            developmentRegion = en;
+            hasScannedForEncodings = 0;
+            knownRegions = (
+                en,
+                Base,
+            );
+            mainGroup = 1A2B3C4D5E6F7G8H9I0J1K2L;
+            productRefGroup = 1A2B3C4D5E6F7G8H9I0J1K2L /* Products */;
+            projectDirPath = "";
+            projectRoot = "";
+            targets = (
+                9I8H7G6F5E4D3C2B1A0J9K8L7M6N5O4P /* QuikApp */,
+            );
+        };
+        /* End PBXProject section */
+    };
+    rootObject = 1A2B3C4D5E6F7G8H9I0J1K2L /* Project object */;
+}
+EOF
+
+# Update export options
+log "Creating export options"
+cat > ios/exportOptions.plist << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>$APPLE_TEAM_ID</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>$BUNDLE_ID</key>
+        <string>profile</string>
+    </dict>
+</dict>
+</plist>
+EOF
+
+log "Signing configuration completed successfully"
 exit 0 
