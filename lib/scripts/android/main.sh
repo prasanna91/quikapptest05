@@ -832,6 +832,36 @@ if [ ! -d "android" ]; then
   flutter create . --platforms=android
 fi
 
+# Fix namespace issues for plugins (AGP 8.x compatibility)
+log "Fixing plugin namespace compatibility for AGP 8.x..."
+if [ -f "android/build.gradle.kts" ]; then
+  # Add namespace configuration for flutter_inappwebview plugin
+  if ! grep -q "flutter_inappwebview.*namespace" android/build.gradle.kts; then
+    log "Adding namespace fix for flutter_inappwebview plugin..."
+    # Add the namespace fix to the existing subprojects block
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' '/subprojects {/a\
+    // Add namespace for flutter_inappwebview\
+    if (project.name == "flutter_inappwebview") {\
+        project.android {\
+            namespace = "com.pichillilorenzo.flutter_inappwebview"\
+        }\
+    }\
+' android/build.gradle.kts
+    else
+      sed -i '/subprojects {/a\
+    // Add namespace for flutter_inappwebview\
+    if (project.name == "flutter_inappwebview") {\
+        project.android {\
+            namespace = "com.pichillilorenzo.flutter_inappwebview"\
+        }\
+    }\
+' android/build.gradle.kts
+    fi
+    log "Added flutter_inappwebview namespace fix"
+  fi
+fi
+
 # local.properties already updated earlier in the script
 
 # Dynamic App Name & Package Name Injection (Android)
@@ -953,6 +983,29 @@ if [ -d "android/gradle" ]; then
   log "Removed Gradle wrapper cache"
 fi
 
+# Clean global Gradle cache that might have old Flutter SDK paths
+if [ -d "$HOME/.gradle" ]; then
+  rm -rf "$HOME/.gradle/caches"
+  log "Removed global Gradle caches"
+fi
+
+# Kill any running Gradle daemons that might have cached the old path
+log "Stopping any running Gradle daemons..."
+cd android
+./gradlew --stop >/dev/null 2>&1 || true
+cd ..
+
+# Force regenerate Gradle wrapper with clean state
+log "Regenerating Gradle wrapper..."
+cd android
+if [ -f "gradlew" ]; then
+  rm -f gradlew gradlew.bat
+fi
+if [ -d "gradle/wrapper" ]; then
+  rm -rf gradle/wrapper
+fi
+cd ..
+
 # Verify the Flutter Gradle file exists at the expected location
 EXPECTED_FLUTTER_GRADLE="$FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle"
 log "Verifying Flutter Gradle file exists at: $EXPECTED_FLUTTER_GRADLE"
@@ -986,17 +1039,29 @@ EOF
   done
 fi
 
-# Force regenerate settings.gradle.kts with correct Flutter SDK path
-log "Regenerating settings.gradle.kts with correct Flutter SDK path..."
+# Debug: Check what's in PATH and which flutter is being used
+log "=== Debug: Flutter Command Resolution ==="
+log "PATH: $PATH"
+log "which flutter: $(which flutter)"
+log "flutter --version output:"
+flutter --version || log "Flutter version check failed"
+
+# CRITICAL FIX: Remove legacy build.gradle files that have hardcoded paths
+log "Removing legacy build.gradle files with hardcoded paths..."
+if [ -f "android/app/build.gradle" ]; then
+  log "Removing android/app/build.gradle (has hardcoded Flutter path)"
+  rm -f "android/app/build.gradle"
+fi
+if [ -f "android/build.gradle" ]; then
+  log "Removing android/build.gradle (legacy Groovy DSL)"
+  rm -f "android/build.gradle"
+fi
+
+# Force regenerate settings.gradle.kts with DETECTED Flutter SDK path
+log "Regenerating settings.gradle.kts with detected Flutter SDK path: $FLUTTER_ROOT_PATH"
 cat > android/settings.gradle.kts << EOF
 pluginManagement {
-    val flutterSdkPath = run {
-        val properties = java.util.Properties()
-        file("local.properties").inputStream().use { properties.load(it) }
-        val flutterSdkPath = properties.getProperty("flutter.sdk")
-        require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-        flutterSdkPath
-    }
+    val flutterSdkPath = "$FLUTTER_ROOT_PATH"
 
     includeBuild("\$flutterSdkPath/packages/flutter_tools/gradle")
 
@@ -1037,6 +1102,30 @@ cat android/local.properties
 
 log "Settings gradle file:"
 head -10 android/settings.gradle.kts
+
+# Additional debug: Check if there are any other gradle files that might be interfering
+log "=== Debug: All Gradle Files ==="
+find android -name "*.gradle*" -type f | while read -r file; do
+  log "Found gradle file: $file"
+  if grep -q "flutter" "$file" 2>/dev/null; then
+    log "  Contains flutter references:"
+    grep -n "flutter" "$file" | head -5
+  fi
+done
+
+# Check if there's a gradle.properties file that might have Flutter settings
+if [ -f "android/gradle.properties" ]; then
+  log "gradle.properties content:"
+  cat android/gradle.properties
+fi
+
+# Check if there are any environment variables that might override Flutter SDK path
+log "=== Debug: Environment Variables ==="
+log "FLUTTER_ROOT: ${FLUTTER_ROOT:-[NOT SET]}"
+log "FLUTTER_HOME: ${FLUTTER_HOME:-[NOT SET]}"
+log "FLUTTER_SDK: ${FLUTTER_SDK:-[NOT SET]}"
+env | grep -i flutter || log "No Flutter-related environment variables found"
+
 log "=== End Pre-Build Verification ==="
 
 # Flutter build
