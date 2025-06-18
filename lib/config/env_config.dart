@@ -1,10 +1,10 @@
 class EnvConfig {
   static const String appName = 'Garbcode App';
-  static const String orgName = 'Garbcode Apparels Private Limited';
-  static const String webUrl = 'https://garbcode.com/';
+  static const String orgName = 'Garbcode';
+  static const String webUrl = 'https://garbcode.com';
   static const String pkgName = 'com.garbcode.garbcodeapp';
   static const String bundleId = 'com.garbcode.garbcodeapp';
-  static const String emailId = 'prasannasrinivasan32@gmail.com';
+  static const String emailId = 'test@garbcode.com';
   static const bool isChatbot = false;
   static const bool isDeeplink = false;
   static const bool isSplash = false;

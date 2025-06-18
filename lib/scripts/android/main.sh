@@ -683,8 +683,11 @@ setup_keystore() {
     fi
   fi
   
-  # Update build.gradle to use keystore
-  if [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
+  # Update build.gradle or build.gradle.kts to use keystore
+  if [ -f "$ANDROID_ROOT/app/build.gradle.kts" ]; then
+    log "Using Kotlin DSL build.gradle.kts - keystore already configured"
+    # The keystore config is already in the .kts file
+  elif [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
     # Create a temporary file with the signing config
     cat > /tmp/signing_config.txt << 'EOF'
     signingConfigs {
@@ -727,8 +730,8 @@ EOF
     # Clean up temporary files
     rm -f /tmp/signing_config.txt /tmp/build_types.txt
   else
-    log "[ERROR] build.gradle not found"
-    send_keystore_error_notification "setup_error" "build.gradle not found"
+    log "[ERROR] Neither build.gradle nor build.gradle.kts found"
+    send_keystore_error_notification "setup_error" "Build file not found"
     return 0
   fi
   
@@ -770,13 +773,16 @@ if [ -n "${APP_NAME:-}" ]; then
 fi
 
 if [ -n "${PKG_NAME:-}" ]; then
-  # Update package name in build.gradle
-  if [ -f "android/app/build.gradle" ]; then
-    sed -i "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
-    sed -i "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
-  else
-    log "[WARN] build.gradle not found. Skipping package name update in build.gradle."
-  fi
+  # Update package name in build.gradle or build.gradle.kts
+if [ -f "android/app/build.gradle.kts" ]; then
+  log "Package name already updated in build.gradle.kts"
+  # The package name is already updated in the .kts file
+elif [ -f "android/app/build.gradle" ]; then
+  sed -i "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
+  sed -i "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+else
+  log "[WARN] Neither build.gradle nor build.gradle.kts found. Skipping package name update."
+fi
 
   # Update package name in AndroidManifest.xml
   if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
