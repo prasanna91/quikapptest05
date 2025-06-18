@@ -683,33 +683,35 @@ setup_keystore() {
     fi
   fi
   
-  # Create keystore properties file
-  local keystore_properties="$ANDROID_ROOT/keystore.properties"
-  cat > "$keystore_properties" << EOF
-storeFile=keystore.jks
-storePassword=${CM_KEYSTORE_PASSWORD}
-keyAlias=${CM_KEY_ALIAS}
-keyPassword=${CM_KEY_PASSWORD}
-EOF
-  
   # Update build.gradle to use keystore
   if [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
-    # Add signing configs to build.gradle
-    sed -i "/android {/a\\
-    signingConfigs {\\
-        release {\\
-            storeFile file(\"keystore.jks\")\\
-            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\\
-            keyAlias System.getenv(\"CM_KEY_ALIAS\")\\
-            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\\
-        }\\
-    }" "$ANDROID_ROOT/app/build.gradle"
+    # Create a temporary file with the signing config
+    cat > /tmp/signing_config.txt << 'EOF'
+    signingConfigs {
+        release {
+            storeFile file("keystore.jks")
+            storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("CM_KEY_ALIAS")
+            keyPassword System.getenv("CM_KEY_PASSWORD")
+        }
+    }
+EOF
     
-    # Update buildTypes to use signing config
-    sed -i "/buildTypes {/a\\
-        release {\\
-            signingConfig signingConfigs.release\\
-        }" "$ANDROID_ROOT/app/build.gradle"
+    # Insert the signing config after "android {"
+    sed -i '/android {/r /tmp/signing_config.txt' "$ANDROID_ROOT/app/build.gradle"
+    
+    # Create a temporary file with the buildTypes config
+    cat > /tmp/build_types.txt << 'EOF'
+        release {
+            signingConfig signingConfigs.release
+        }
+EOF
+    
+    # Insert the buildTypes config after "buildTypes {"
+    sed -i '/buildTypes {/r /tmp/build_types.txt' "$ANDROID_ROOT/app/build.gradle"
+    
+    # Clean up temporary files
+    rm -f /tmp/signing_config.txt /tmp/build_types.txt
   else
     log "[ERROR] build.gradle not found"
     send_keystore_error_notification "setup_error" "build.gradle not found"

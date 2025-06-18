@@ -106,6 +106,11 @@ update_pubspec() {
 
     # Clean up backup files
     rm -f "${pubspec_file}.bak"
+    
+    # Ensure flutter_launcher_icons is in dev_dependencies for branding
+    if ! grep -q "flutter_launcher_icons:" "$pubspec_file"; then
+        sed -i '/flutter_lints:/a\  flutter_launcher_icons: ^0.13.1' "$pubspec_file"
+    fi
 }
 
 # Main execution
