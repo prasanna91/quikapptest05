@@ -377,6 +377,64 @@ send_email_notification "started" "" "" "" ""
 # Validate Flutter environment
 validate_flutter_env
 
+# Update local.properties with correct Flutter SDK path BEFORE any Gradle operations
+log "Updating local.properties with correct Flutter SDK path..."
+
+# Try multiple methods to find Flutter SDK path
+FLUTTER_ROOT_PATH=""
+
+# Method 1: Use FLUTTER_ROOT environment variable if available
+if [ -n "${FLUTTER_ROOT:-}" ]; then
+  FLUTTER_ROOT_PATH="$FLUTTER_ROOT"
+  log "Using FLUTTER_ROOT environment variable: $FLUTTER_ROOT_PATH"
+elif [ -n "${FLUTTER_HOME:-}" ]; then
+  FLUTTER_ROOT_PATH="$FLUTTER_HOME"
+  log "Using FLUTTER_HOME environment variable: $FLUTTER_ROOT_PATH"
+else
+  # Method 2: Get from flutter command location
+  FLUTTER_BIN=$(which flutter 2>/dev/null)
+  if [ -n "$FLUTTER_BIN" ]; then
+    FLUTTER_ROOT_PATH=$(dirname "$(dirname "$FLUTTER_BIN")")
+    log "Detected Flutter SDK from flutter command: $FLUTTER_ROOT_PATH"
+  fi
+fi
+
+# Method 3: Fallback to common Codemagic paths
+if [ -z "$FLUTTER_ROOT_PATH" ] || [ ! -d "$FLUTTER_ROOT_PATH" ]; then
+  for path in "/usr/local/flutter" "/opt/flutter" "/home/builder/programs/flutter"; do
+    if [ -d "$path" ]; then
+      FLUTTER_ROOT_PATH="$path"
+      log "Using fallback Flutter path: $FLUTTER_ROOT_PATH"
+      break
+    fi
+  done
+fi
+
+# Ensure we have a valid Flutter SDK path
+if [ -z "$FLUTTER_ROOT_PATH" ] || [ ! -d "$FLUTTER_ROOT_PATH" ]; then
+  log "[ERROR] Could not find Flutter SDK path"
+  exit 1
+fi
+
+# Verify Flutter SDK structure
+if [ ! -f "$FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle" ]; then
+  log "[ERROR] Flutter SDK structure invalid - flutter.gradle not found at: $FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle"
+  exit 1
+fi
+
+# Create/update local.properties early
+mkdir -p android
+cat > android/local.properties << EOF
+sdk.dir=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}
+flutter.sdk=$FLUTTER_ROOT_PATH
+flutter.buildMode=release
+flutter.versionName=$VERSION_NAME
+flutter.versionCode=$VERSION_CODE
+EOF
+
+log "Updated local.properties with Flutter SDK path: $FLUTTER_ROOT_PATH"
+log "Verified flutter.gradle exists at: $FLUTTER_ROOT_PATH/packages/flutter_tools/gradle/flutter.gradle"
+
 # Check Flutter version (now just logs the version)
 check_flutter_version
 
@@ -762,24 +820,7 @@ if [ ! -d "android" ]; then
   flutter create . --platforms=android
 fi
 
-# Update local.properties with correct Flutter SDK path
-log "Updating local.properties with correct Flutter SDK path..."
-FLUTTER_ROOT_PATH=$(flutter --version --machine 2>/dev/null | head -1 | cut -d'"' -f4 2>/dev/null || which flutter | sed 's|/bin/flutter||')
-if [ -z "$FLUTTER_ROOT_PATH" ]; then
-  # Fallback: try to find Flutter root from flutter command
-  FLUTTER_ROOT_PATH=$(which flutter | sed 's|/bin/flutter||')
-fi
-
-# Create/update local.properties
-cat > android/local.properties << EOF
-sdk.dir=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}
-flutter.sdk=$FLUTTER_ROOT_PATH
-flutter.buildMode=release
-flutter.versionName=$VERSION_NAME
-flutter.versionCode=$VERSION_CODE
-EOF
-
-log "Updated local.properties with Flutter SDK path: $FLUTTER_ROOT_PATH"
+# local.properties already updated earlier in the script
 
 # Dynamic App Name & Package Name Injection (Android)
 log "Updating app name and package ID..."
@@ -866,6 +907,21 @@ EOF
     log "Created new MainActivity.kt file."
   fi
 fi
+
+# Debug: Show Flutter SDK detection and local.properties content
+log "=== Debug: Flutter SDK Detection ==="
+log "FLUTTER_ROOT env var: ${FLUTTER_ROOT:-[NOT SET]}"
+log "FLUTTER_HOME env var: ${FLUTTER_HOME:-[NOT SET]}"
+log "Flutter command path: $(which flutter 2>/dev/null || echo '[NOT FOUND]')"
+log "Detected FLUTTER_ROOT_PATH: ${FLUTTER_ROOT_PATH:-[NOT SET]}"
+
+log "=== Debug: Current local.properties content ==="
+if [ -f "android/local.properties" ]; then
+  cat android/local.properties
+else
+  log "[ERROR] local.properties file not found!"
+fi
+log "=== End local.properties content ==="
 
 # Flutter build
 log "Building Flutter Android app..."
