@@ -695,23 +695,21 @@ EOF
   # Update build.gradle to use keystore
   if [ -f "$ANDROID_ROOT/app/build.gradle" ]; then
     # Add signing configs to build.gradle
-    sed -i '' "/android {/a\
-    signingConfigs {\
-        release {\
-            storeFile file("keystore.jks")\
-            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\
-            keyAlias System.getenv(\"CM_KEY_ALIAS\")\
-            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\
-        }\
-    }"
- "$ANDROID_ROOT/app/build.gradle"
+    sed -i "/android {/a\\
+    signingConfigs {\\
+        release {\\
+            storeFile file(\"keystore.jks\")\\
+            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\\
+            keyAlias System.getenv(\"CM_KEY_ALIAS\")\\
+            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\\
+        }\\
+    }" "$ANDROID_ROOT/app/build.gradle"
     
     # Update buildTypes to use signing config
-    sed -i '' "/buildTypes {/a\
-        release {\
-            signingConfig signingConfigs.release\
-        }"
- "$ANDROID_ROOT/app/build.gradle"
+    sed -i "/buildTypes {/a\\
+        release {\\
+            signingConfig signingConfigs.release\\
+        }" "$ANDROID_ROOT/app/build.gradle"
   else
     log "[ERROR] build.gradle not found"
     send_keystore_error_notification "setup_error" "build.gradle not found"
@@ -749,7 +747,7 @@ fi
 log "Updating app name and package ID..."
 if [ -n "${APP_NAME:-}" ]; then
   if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-    sed -i '' "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    sed -i "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
   else
     log "[WARN] AndroidManifest.xml not found. Skipping app name update."
   fi
@@ -758,15 +756,15 @@ fi
 if [ -n "${PKG_NAME:-}" ]; then
   # Update package name in build.gradle
   if [ -f "android/app/build.gradle" ]; then
-    sed -i '' "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
-    sed -i '' "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+    sed -i "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
+    sed -i "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
   else
     log "[WARN] build.gradle not found. Skipping package name update in build.gradle."
   fi
 
   # Update package name in AndroidManifest.xml
   if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-    sed -i '' "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    sed -i "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
   else
     log "[WARN] AndroidManifest.xml not found. Skipping package name update in AndroidManifest.xml."
   fi
@@ -788,7 +786,7 @@ if [ -n "${PKG_NAME:-}" ]; then
     mv "$OLD_MAIN_ACTIVITY_PATH" "$NEW_MAIN_ACTIVITY_FILE" || true
 
     # Update package declaration in MainActivity.kt
-    sed -i '' "s/package ${OLD_PACKAGE_IN_FILE}/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+    sed -i "s/package ${OLD_PACKAGE_IN_FILE}/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
 
     log "Updated package name in MainActivity.kt and moved to new directory."
   else
