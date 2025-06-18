@@ -31,8 +31,14 @@ if [ -n "${LOGO_URL:-}" ]; then
   fi
 fi
 
-# Use the resolved SPLASH_URL value, not the variable expression
-SPLASH_URL_RESOLVED="${SPLASH_URL:-https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png}"
+# Properly resolve SPLASH_URL - handle case where SPLASH_URL contains variable expression
+if [[ "${SPLASH_URL:-}" == *'${SPLASH'* ]]; then
+  # SPLASH_URL contains a variable expression, use SPLASH instead
+  SPLASH_URL_RESOLVED="${SPLASH:-https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png}"
+else
+  # SPLASH_URL is a direct value
+  SPLASH_URL_RESOLVED="${SPLASH_URL:-${SPLASH:-https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png}}"
+fi
 log "Debug: SPLASH_URL_RESOLVED='$SPLASH_URL_RESOLVED'"
 if [ -n "$SPLASH_URL_RESOLVED" ]; then
   log "Downloading splash from $SPLASH_URL_RESOLVED"

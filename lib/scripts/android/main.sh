@@ -762,11 +762,34 @@ if [ ! -d "android" ]; then
   flutter create . --platforms=android
 fi
 
+# Update local.properties with correct Flutter SDK path
+log "Updating local.properties with correct Flutter SDK path..."
+FLUTTER_ROOT_PATH=$(flutter --version --machine 2>/dev/null | head -1 | cut -d'"' -f4 2>/dev/null || which flutter | sed 's|/bin/flutter||')
+if [ -z "$FLUTTER_ROOT_PATH" ]; then
+  # Fallback: try to find Flutter root from flutter command
+  FLUTTER_ROOT_PATH=$(which flutter | sed 's|/bin/flutter||')
+fi
+
+# Create/update local.properties
+cat > android/local.properties << EOF
+sdk.dir=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}
+flutter.sdk=$FLUTTER_ROOT_PATH
+flutter.buildMode=release
+flutter.versionName=$VERSION_NAME
+flutter.versionCode=$VERSION_CODE
+EOF
+
+log "Updated local.properties with Flutter SDK path: $FLUTTER_ROOT_PATH"
+
 # Dynamic App Name & Package Name Injection (Android)
 log "Updating app name and package ID..."
 if [ -n "${APP_NAME:-}" ]; then
   if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-    sed -i "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    else
+      sed -i "s#android:label=\"[^\"]*\"#android:label=\"$APP_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    fi
   else
     log "[WARN] AndroidManifest.xml not found. Skipping app name update."
   fi
@@ -778,41 +801,69 @@ if [ -f "android/app/build.gradle.kts" ]; then
   log "Package name already updated in build.gradle.kts"
   # The package name is already updated in the .kts file
 elif [ -f "android/app/build.gradle" ]; then
-  sed -i "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
-  sed -i "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
+    sed -i '' "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+  else
+    sed -i "s#applicationId \"[^\"]*\"#applicationId \"$PKG_NAME\"#g" android/app/build.gradle || true
+    sed -i "s#namespace \"[^\"]*\"#namespace \"$PKG_NAME\"#g" android/app/build.gradle || true
+  fi
 else
   log "[WARN] Neither build.gradle nor build.gradle.kts found. Skipping package name update."
 fi
 
   # Update package name in AndroidManifest.xml
   if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-    sed -i "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    else
+      sed -i "s#package=\"[^\"]*\"#package=\"$PKG_NAME\"#g" android/app/src/main/AndroidManifest.xml || true
+    fi
   else
     log "[WARN] AndroidManifest.xml not found. Skipping package name update in AndroidManifest.xml."
   fi
 
   # Update package name in MainActivity.kt
   CURRENT_DIR=$(pwd)
-  OLD_MAIN_ACTIVITY_PATH="$CURRENT_DIR/android/app/src/main/kotlin/com/example/quikapptest05/MainActivity.kt"
   NEW_PACKAGE_PATH=$(echo "$PKG_NAME" | sed 's/\./\//g') # Convert com.example.app to com/example/app
   NEW_MAIN_ACTIVITY_DIR="$CURRENT_DIR/android/app/src/main/kotlin/$NEW_PACKAGE_PATH"
   NEW_MAIN_ACTIVITY_FILE="$NEW_MAIN_ACTIVITY_DIR/MainActivity.kt"
 
-  if [ -f "$OLD_MAIN_ACTIVITY_PATH" ]; then
-    OLD_PACKAGE_IN_FILE="com.example.quikapptest05"
-    # shellcheck disable=SC1078,SC1079
-    # Create new package directory structure if it doesn't exist
-    mkdir -p "$NEW_MAIN_ACTIVITY_DIR"
+  # Create new package directory structure if it doesn't exist
+  mkdir -p "$NEW_MAIN_ACTIVITY_DIR"
 
-    # Move MainActivity.kt to the new package directory
+  # Check for existing MainActivity.kt files in various locations
+  OLD_MAIN_ACTIVITY_PATH=""
+  if [ -f "$CURRENT_DIR/android/app/src/main/kotlin/com/example/quikapptest05/MainActivity.kt" ]; then
+    OLD_MAIN_ACTIVITY_PATH="$CURRENT_DIR/android/app/src/main/kotlin/com/example/quikapptest05/MainActivity.kt"
+  elif [ -f "$CURRENT_DIR/android/app/src/main/kotlin/com/garbcode/garbcodeapp/MainActivity.kt" ]; then
+    OLD_MAIN_ACTIVITY_PATH="$CURRENT_DIR/android/app/src/main/kotlin/com/garbcode/garbcodeapp/MainActivity.kt"
+  fi
+
+  if [ -n "$OLD_MAIN_ACTIVITY_PATH" ] && [ -f "$OLD_MAIN_ACTIVITY_PATH" ]; then
+    # Move existing MainActivity.kt to the new package directory
     mv "$OLD_MAIN_ACTIVITY_PATH" "$NEW_MAIN_ACTIVITY_FILE" || true
 
     # Update package declaration in MainActivity.kt
-    sed -i "s/package ${OLD_PACKAGE_IN_FILE}/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s/package .*/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+    else
+      sed -i "s/package .*/package ${PKG_NAME}/g" "$NEW_MAIN_ACTIVITY_FILE" || true
+    fi
 
     log "Updated package name in MainActivity.kt and moved to new directory."
   else
-    log "[WARN] MainActivity.kt not found at expected path: $OLD_MAIN_ACTIVITY_PATH. Skipping package name update for this file."
+    # Create new MainActivity.kt file
+    log "Creating new MainActivity.kt file for package $PKG_NAME"
+    cat > "$NEW_MAIN_ACTIVITY_FILE" << EOF
+package ${PKG_NAME}
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity() {
+}
+EOF
+    log "Created new MainActivity.kt file."
   fi
 fi
 
