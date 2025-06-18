@@ -788,6 +788,33 @@ class _MainHomeState extends State<MainHome> {
       _pendingInitialUrl = null;
     }
   }
+
+  // Add missing getters
+  bool get isCameraEnabled => EnvConfig.isCamera;
+  bool get isLocationEnabled => EnvConfig.isLocation;
+  bool get isMicEnabled => EnvConfig.isMic;
+  bool get isContactEnabled => EnvConfig.isContact;
+  bool get isCalendarEnabled => EnvConfig.isCalendar;
+  bool get isNotificationEnabled => EnvConfig.isNotification;
+  bool get isBiometricEnabled => EnvConfig.isBiometric;
+  bool get pushNotify => EnvConfig.pushNotify;
+  bool get isPullDown => EnvConfig.isPulldown;
+
+  // Fix URI type mismatches
+  WebUri _parseWebUri(String url) {
+    return WebUri(url);
+  }
+
+  // Update URL parsing methods
+  void _loadUrl(String url) {
+    webViewController?.loadUrl(urlRequest: URLRequest(url: _parseWebUri(url)));
+  }
+
+  void _loadInitialUrl() {
+    webViewController?.loadUrl(
+        urlRequest:
+            URLRequest(url: _parseWebUri(_pendingInitialUrl ?? widget.webUrl)));
+  }
 }
 
 List<Map<String, dynamic>> parseBottomMenuItems(String raw) {

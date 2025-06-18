@@ -19,8 +19,10 @@ class EnvConfig {
   static const bool isBiometric = false;
   static const bool isCalendar = false;
   static const bool isStorage = false;
-  static const String logoUrl = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
-  static const String splashUrl = 'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
+  static const String logoUrl =
+      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
+  static const String splashUrl =
+      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/logo-gc.png';
   static const String splashBg = '';
   static const String splashBgColor = '#cbdbf5';
   static const String splashTagline = 'Welcome to Garbcode';
@@ -39,4 +41,10 @@ class EnvConfig {
   static const String bottommenuIconPosition = 'above';
   static const String bottommenuVisibleOn = 'all';
   static const bool pushNotify = false;
+
+  // Firebase configuration URLs
+  static const String firebaseConfigAndroid =
+      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/firebase-config-android.json';
+  static const String firebaseConfigIos =
+      'https://raw.githubusercontent.com/prasanna91/QuikApp/main/firebase-config-ios.json';
 }

@@ -34,7 +34,8 @@ Future<String?> getAndroidFirebasePackageName() async {
   try {
     final jsonStr = await rootBundle.loadString('assets/google-services.json');
     final data = json.decode(jsonStr);
-    return data['client']?[0]?['client_info']?['android_client_info']?['package_name'];
+    return data['client']?[0]?['client_info']?['android_client_info']
+        ?['package_name'];
   } catch (e) {
     debugPrint("⚠️ Error reading google-services.json: $e");
     return null;
@@ -44,8 +45,10 @@ Future<String?> getAndroidFirebasePackageName() async {
 Future<String?> getIosFirebaseBundleId() async {
   try {
     final byteData = await rootBundle.load('assets/GoogleService-Info.plist');
-    final plistData = const Utf8Decoder().convert(byteData.buffer.asUint8List());
-    final bundleIdRegex = RegExp(r'<key>BUNDLE_ID<\/key>\s*<string>(.*?)<\/string>');
+    final plistData =
+        const Utf8Decoder().convert(byteData.buffer.asUint8List());
+    final bundleIdRegex =
+        RegExp(r'<key>BUNDLE_ID<\/key>\s*<string>(.*?)<\/string>');
     final match = bundleIdRegex.firstMatch(plistData);
     return match?.group(1);
   } catch (e) {
@@ -62,10 +65,11 @@ Future<bool> assetExists(String path) async {
     return false;
   }
 }
+
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Lock orientation to portrait only
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -74,7 +78,7 @@ void main() async {
     // Initialize local notifications first
     await initLocalNotifications();
 
-    if (pushNotify) {
+    if (EnvConfig.pushNotify) {
       try {
         final info = await PackageInfo.fromPlatform();
 
@@ -116,17 +120,19 @@ void main() async {
 
         final options = await loadFirebaseOptionsFromJson();
         await Firebase.initializeApp(options: options);
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+        FirebaseMessaging.onBackgroundMessage(
+            _firebaseMessagingBackgroundHandler);
         await initializeFirebaseMessaging();
         debugPrint("✅ Firebase initialized successfully");
       } catch (e) {
         debugPrint("❌ Firebase initialization error: $e");
       }
     } else {
-      debugPrint("🚫 Firebase not initialized (pushNotify: $pushNotify, isWeb: $kIsWeb)");
+      debugPrint(
+          "🚫 Firebase not initialized (pushNotify: ${EnvConfig.pushNotify}, isWeb: $kIsWeb)");
     }
 
-    if (webUrl.isEmpty) {
+    if (EnvConfig.webUrl.isEmpty) {
       debugPrint("❗ Missing WEB_URL environment variable.");
       runApp(MaterialApp(
         home: Scaffold(
@@ -138,49 +144,49 @@ void main() async {
 
     debugPrint("""
       🛠 Runtime Config:
-      - pushNotify: $pushNotify
-      - webUrl: $webUrl
-      - isSplash: $isSplashEnabled,
-      - splashLogo: $splashUrl,
-      - splashBg: $splashBgUrl,
-      - splashDuration: $splashDuration,
-      - splashAnimation: $splashAnimation,
-      - taglineColor: $splashTaglineColor,
-      - spbgColor: $splashBgColor,
-      - isBottomMenu: $isBottomMenu,
-      - bottomMenuItems: ${parseBottomMenuItems(bottomMenuRaw)},
-      - isDeeplink: $isDeepLink,
-      - backgroundColor: $bottomMenuBgColor,
-      - activeTabColor: $bottomMenuActiveTabColor,
-      - textColor: $bottomMenuTextColor,
-      - iconColor: $bottomMenuIconColor,
-      - iconPosition: $bottomMenuIconPosition,
+      - pushNotify: ${EnvConfig.pushNotify}
+      - webUrl: ${EnvConfig.webUrl}
+      - isSplash: ${EnvConfig.isSplash},
+      - splashLogo: ${EnvConfig.splashUrl},
+      - splashBg: ${EnvConfig.splashBg},
+      - splashDuration: ${EnvConfig.splashDuration},
+      - splashAnimation: ${EnvConfig.splashAnimation},
+      - taglineColor: ${EnvConfig.splashTaglineColor},
+      - spbgColor: ${EnvConfig.splashBgColor},
+      - isBottomMenu: ${EnvConfig.isBottommenu},
+      - bottomMenuItems: ${parseBottomMenuItems(EnvConfig.bottommenuItems)},
+      - isDeeplink: ${EnvConfig.isDeeplink},
+      - backgroundColor: ${EnvConfig.bottommenuBgColor},
+      - activeTabColor: ${EnvConfig.bottommenuActiveTabColor},
+      - textColor: ${EnvConfig.bottommenuTextColor},
+      - iconColor: ${EnvConfig.bottommenuIconColor},
+      - iconPosition: ${EnvConfig.bottommenuIconPosition},
       - Permissions:
-        - Camera: $isCameraEnabled
-        - Location: $isLocationEnabled
-        - Mic: $isMicEnabled
-        - Notification: $isNotificationEnabled
-        - Contact: $isContactEnabled
+        - Camera: ${EnvConfig.isCamera}
+        - Location: ${EnvConfig.isLocation}
+        - Mic: ${EnvConfig.isMic}
+        - Notification: ${EnvConfig.isNotification}
+        - Contact: ${EnvConfig.isContact}
       """);
 
     runApp(MyApp(
-      webUrl: webUrl,
-      isSplash: isSplashEnabled,
-      splashLogo: splashUrl,
-      splashBg: splashBgUrl,
-      splashDuration: splashDuration,
-      splashAnimation: splashAnimation,
-      taglineColor: splashTaglineColor,
-      spbgColor: splashBgColor,
-      isBottomMenu: isBottomMenu,
-      bottomMenuItems: bottomMenuRaw,
-      isDeeplink: isDeepLink,
-      backgroundColor: bottomMenuBgColor,
-      activeTabColor: bottomMenuActiveTabColor,
-      textColor: bottomMenuTextColor,
-      iconColor: bottomMenuIconColor,
-      iconPosition: bottomMenuIconPosition,
-      isLoadIndicator: isLoadIndicator,
+      webUrl: EnvConfig.webUrl,
+      isSplash: EnvConfig.isSplash,
+      splashLogo: EnvConfig.splashUrl,
+      splashBg: EnvConfig.splashBg,
+      splashDuration: EnvConfig.splashDuration,
+      splashAnimation: EnvConfig.splashAnimation,
+      taglineColor: EnvConfig.splashTaglineColor,
+      spbgColor: EnvConfig.splashBgColor,
+      isBottomMenu: EnvConfig.isBottommenu,
+      bottomMenuItems: EnvConfig.bottommenuItems,
+      isDeeplink: EnvConfig.isDeeplink,
+      backgroundColor: EnvConfig.bottommenuBgColor,
+      activeTabColor: EnvConfig.bottommenuActiveTabColor,
+      textColor: EnvConfig.bottommenuTextColor,
+      iconColor: EnvConfig.bottommenuIconColor,
+      iconPosition: EnvConfig.bottommenuIconPosition,
+      isLoadIndicator: EnvConfig.isLoadIndicator,
     ));
   } catch (e, stackTrace) {
     debugPrint("❌ Fatal error during initialization: $e");
@@ -192,22 +198,25 @@ void main() async {
     ));
   }
 }
-Widget _firebaseErrorScreen({required String title, required String expected, required String actual}) {
+
+Widget _firebaseErrorScreen(
+    {required String title, required String expected, required String actual}) {
   return MaterialApp(
     home: Scaffold(
       appBar: AppBar(title: Text("Firebase Configuration Error")),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("❌ $title", style: TextStyle(fontSize: 20, color: Colors.red)),
-            SizedBox(height: 20),
-            Text("Expected: $expected", style: TextStyle(fontSize: 16)),
-            SizedBox(height: 10),
-            Text("Actual: $actual", style: TextStyle(fontSize: 16)),
-            SizedBox(height: 30),
-            Text("Fix your Firebase configuration before proceeding.", textAlign: TextAlign.center),
+            Text(title,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Text("Expected: $expected"),
+            Text("Actual: $actual"),
+            SizedBox(height: 24),
+            Text(
+                "Please check your Firebase configuration files and make sure they match your app's package name."),
           ],
         ),
       ),
@@ -218,15 +227,19 @@ Widget _firebaseErrorScreen({required String title, required String expected, re
 Widget _missingFirebaseFileScreen(String fileName) {
   return MaterialApp(
     home: Scaffold(
-      appBar: AppBar(title: Text("Missing Firebase File")),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            "❌ Firebase Configuration File is missing: $fileName",
-            style: TextStyle(fontSize: 18, color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
+      appBar: AppBar(title: Text("Missing Firebase Configuration")),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Missing Firebase Configuration File",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Text("The file '$fileName' is missing from your assets."),
+            SizedBox(height: 24),
+            Text("Please add the file to your assets folder and try again."),
+          ],
         ),
       ),
     ),
