@@ -1004,6 +1004,12 @@ subprojects {
                         println("Applied namespace fix for webview_flutter_android")
                     }
                 }
+                "uni_links" -> {
+                    if (namespace == null) {
+                        namespace = "name.avioli.unilinks"
+                        println("Applied namespace fix for uni_links")
+                    }
+                }
             }
         }
     }

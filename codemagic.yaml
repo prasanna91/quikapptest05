@@ -3,15 +3,18 @@ workflows:
     name: Android-Free
     environment:
       flutter: 3.32.2
+      java: 17
+      android_sdk: 34
+      ndk: r27
       vars:
-        VERSION_NAME: "${VERSION_NAME}"
-        VERSION_CODE: "${VERSION_CODE}"
-        APP_NAME: "${APP_NAME}"
-        ORG_NAME: "${ORG_NAME}"
-        WEB_URL: "${WEB_URL}"
-        PKG_NAME: "${PKG_NAME}"
-        BUNDLE_ID: "${BUNDLE_ID}"
-        EMAIL_ID: "${EMAIL_ID}"
+        VERSION_NAME: "${VERSION_NAME:-1.0.22}"
+        VERSION_CODE: "${VERSION_CODE:-27}"
+        APP_NAME: "${APP_NAME:-Garbcode App}"
+        ORG_NAME: "${ORG_NAME:-Garbcode Apparels Private Limited}"
+        WEB_URL: "${WEB_URL:-https://garbcode.com/}"
+        PKG_NAME: "${PKG_NAME:-com.garbcode.garbcodeapp}"
+        BUNDLE_ID: "${BUNDLE_ID:-com.garbcode.garbcodeapp}"
+        EMAIL_ID: "${EMAIL_ID:-prasannasrinivasan32@gmail.com}"
         PUSH_NOTIFY: "false"
         IS_CHATBOT: "${IS_CHATBOT}"
         IS_DEEPLINK: "${IS_DEEPLINK}"
@@ -60,6 +63,9 @@ workflows:
     name: Android-Paid
     environment:
       flutter: 3.32.2
+      java: 17
+      android_sdk: 34
+      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -118,6 +124,9 @@ workflows:
     name: Android-Publish
     environment:
       flutter: 3.32.2
+      java: 17
+      android_sdk: 34
+      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -181,6 +190,9 @@ workflows:
     name: Android-Publish (No Push)
     environment:
       flutter: 3.32.2
+      java: 17
+      android_sdk: 34
+      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
@@ -314,6 +326,9 @@ workflows:
     name: Combined Android & iOS
     environment:
       flutter: 3.32.2
+      java: 17
+      android_sdk: 34
+      ndk: r27
       vars:
         VERSION_NAME: "${VERSION_NAME}"
         VERSION_CODE: "${VERSION_CODE}"
