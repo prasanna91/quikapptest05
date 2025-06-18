@@ -697,8 +697,15 @@ setup_keystore() {
     }
 EOF
     
-    # Insert the signing config after "android {"
-    sed -i '/android {/r /tmp/signing_config.txt' "$ANDROID_ROOT/app/build.gradle"
+    # Insert the signing config after "android {" using awk
+    awk '
+    /android \{/ { 
+        print; 
+        while ((getline line < "/tmp/signing_config.txt") > 0) print line; 
+        close("/tmp/signing_config.txt"); 
+        next 
+    } 
+    1' "$ANDROID_ROOT/app/build.gradle" > "$ANDROID_ROOT/app/build.gradle.tmp" && mv "$ANDROID_ROOT/app/build.gradle.tmp" "$ANDROID_ROOT/app/build.gradle"
     
     # Create a temporary file with the buildTypes config
     cat > /tmp/build_types.txt << 'EOF'
@@ -707,8 +714,15 @@ EOF
         }
 EOF
     
-    # Insert the buildTypes config after "buildTypes {"
-    sed -i '/buildTypes {/r /tmp/build_types.txt' "$ANDROID_ROOT/app/build.gradle"
+    # Insert the buildTypes config after "buildTypes {" using awk
+    awk '
+    /buildTypes \{/ { 
+        print; 
+        while ((getline line < "/tmp/build_types.txt") > 0) print line; 
+        close("/tmp/build_types.txt"); 
+        next 
+    } 
+    1' "$ANDROID_ROOT/app/build.gradle" > "$ANDROID_ROOT/app/build.gradle.tmp" && mv "$ANDROID_ROOT/app/build.gradle.tmp" "$ANDROID_ROOT/app/build.gradle"
     
     # Clean up temporary files
     rm -f /tmp/signing_config.txt /tmp/build_types.txt
