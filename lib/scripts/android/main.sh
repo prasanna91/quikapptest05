@@ -851,20 +851,89 @@ if [ -f "android/gradle.properties" ]; then
   fi
 fi
 
-# Update flutter_inappwebview version in pubspec.yaml to a more recent version
+# Update plugin versions for AGP 8.x compatibility and resolve dependency conflicts
 if [ -f "pubspec.yaml" ]; then
+  log "Updating plugin versions for AGP 8.x compatibility..."
+  
+  # Update flutter_inappwebview to a stable version that works with AGP 8.x
   if grep -q "flutter_inappwebview:" pubspec.yaml; then
-    log "Updating flutter_inappwebview to newer version for AGP 8.x compatibility..."
+    log "Updating flutter_inappwebview to AGP 8.x compatible version..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-      sed -i '' 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.1.5/' pubspec.yaml
+      sed -i '' 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.0.0/' pubspec.yaml
     else
-      sed -i 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.1.5/' pubspec.yaml
+      sed -i 's/flutter_inappwebview: .*/flutter_inappwebview: ^6.0.0/' pubspec.yaml
     fi
-    log "Updated flutter_inappwebview version to 6.1.5"
+    log "Updated flutter_inappwebview to 6.0.0"
+  fi
+  
+  # Update package_info_plus to resolve dependency conflicts
+  if grep -q "package_info_plus:" pubspec.yaml; then
+    log "Updating package_info_plus to resolve dependency conflicts..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/package_info_plus: .*/package_info_plus: ^8.0.0/' pubspec.yaml
+    else
+      sed -i 's/package_info_plus: .*/package_info_plus: ^8.0.0/' pubspec.yaml
+    fi
+    log "Updated package_info_plus to 8.0.0"
+  fi
+  
+  # Update other plugins to newer versions for better compatibility (only if they exist)
+  if grep -q "flutter_local_notifications:" pubspec.yaml; then
+    log "Updating flutter_local_notifications for better compatibility..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/flutter_local_notifications: .*/flutter_local_notifications: ^16.3.0/' pubspec.yaml
+    else
+      sed -i 's/flutter_local_notifications: .*/flutter_local_notifications: ^16.3.0/' pubspec.yaml
+    fi
+    log "Updated flutter_local_notifications to 16.3.0"
+  fi
+  
+  if grep -q "permission_handler:" pubspec.yaml; then
+    log "Updating permission_handler for better compatibility..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/permission_handler: .*/permission_handler: ^11.3.0/' pubspec.yaml
+    else
+      sed -i 's/permission_handler: .*/permission_handler: ^11.3.0/' pubspec.yaml
+    fi
+    log "Updated permission_handler to 11.3.0"
+  fi
+  
+  # Update shared_preferences for compatibility (only if it exists)
+  if grep -q "shared_preferences:" pubspec.yaml; then
+    log "Updating shared_preferences for better compatibility..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/shared_preferences: .*/shared_preferences: ^2.2.3/' pubspec.yaml
+    else
+      sed -i 's/shared_preferences: .*/shared_preferences: ^2.2.3/' pubspec.yaml
+    fi
+    log "Updated shared_preferences to 2.2.3"
+  fi
+  
+  # Update Flutter dependencies after version changes
+  log "Resolving Flutter dependencies after plugin updates..."
+  if ! flutter pub get; then
+    log "[WARN] Dependency resolution failed with updated versions. Trying fallback versions..."
     
-    # Update Flutter dependencies after version change
-    log "Updating Flutter dependencies after plugin version changes..."
-    flutter pub get
+    # Fallback: Use flutter_inappwebview 5.8.0 (original) with updated package_info_plus
+    log "Applying fallback version strategy..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/flutter_inappwebview: .*/flutter_inappwebview: ^5.8.0/' pubspec.yaml
+      sed -i '' 's/package_info_plus: .*/package_info_plus: ^5.0.1/' pubspec.yaml
+    else
+      sed -i 's/flutter_inappwebview: .*/flutter_inappwebview: ^5.8.0/' pubspec.yaml
+      sed -i 's/package_info_plus: .*/package_info_plus: ^5.0.1/' pubspec.yaml
+    fi
+    
+    log "Trying dependency resolution with fallback versions..."
+    if ! flutter pub get; then
+      log "[ERROR] Dependency resolution failed even with fallback versions"
+      log "Manual intervention may be required for pubspec.yaml"
+      # Continue anyway - the build might still work
+    else
+      log "✅ Dependency resolution successful with fallback versions"
+    fi
+  else
+    log "✅ Dependency resolution successful with updated versions"
   fi
 fi
 
@@ -879,30 +948,51 @@ subprojects { project ->
         if (project.hasProperty('android')) {
             def android = project.android
             
-            // Fix namespace for flutter_inappwebview
+            // Fix namespace for flutter_inappwebview (version 6.0.0+)
             if (project.name == 'flutter_inappwebview' && !android.hasProperty('namespace')) {
                 android.namespace = 'com.pichillilorenzo.flutter_inappwebview'
+                println "Applied namespace fix for flutter_inappwebview: ${android.namespace}"
             }
             
-            // Fix namespace for other common plugins that might need it
+            // Fix namespace for flutter_local_notifications
             if (project.name == 'flutter_local_notifications' && !android.hasProperty('namespace')) {
                 android.namespace = 'com.dexterous.flutterlocalnotifications'
+                println "Applied namespace fix for flutter_local_notifications: ${android.namespace}"
             }
             
+            // Fix namespace for permission_handler_android
             if (project.name == 'permission_handler_android' && !android.hasProperty('namespace')) {
                 android.namespace = 'com.baseflow.permissionhandler'
+                println "Applied namespace fix for permission_handler_android: ${android.namespace}"
             }
             
+            // Fix namespace for url_launcher_android
             if (project.name == 'url_launcher_android' && !android.hasProperty('namespace')) {
                 android.namespace = 'io.flutter.plugins.urllauncher'
+                println "Applied namespace fix for url_launcher_android: ${android.namespace}"
             }
             
+            // Fix namespace for package_info_plus (version 8.0.0+)
             if (project.name == 'package_info_plus' && !android.hasProperty('namespace')) {
                 android.namespace = 'dev.fluttercommunity.plus.packageinfo'
+                println "Applied namespace fix for package_info_plus: ${android.namespace}"
             }
             
+            // Fix namespace for shared_preferences_android
             if (project.name == 'shared_preferences_android' && !android.hasProperty('namespace')) {
                 android.namespace = 'io.flutter.plugins.sharedpreferences'
+                println "Applied namespace fix for shared_preferences_android: ${android.namespace}"
+            }
+            
+            // Fix namespace for other potential plugins
+            if (project.name == 'file_picker' && !android.hasProperty('namespace')) {
+                android.namespace = 'com.mr.flutter.plugin.filepicker'
+                println "Applied namespace fix for file_picker: ${android.namespace}"
+            }
+            
+            if (project.name == 'webview_flutter_android' && !android.hasProperty('namespace')) {
+                android.namespace = 'io.flutter.plugins.webviewflutter'
+                println "Applied namespace fix for webview_flutter_android: ${android.namespace}"
             }
         }
     }
@@ -1192,8 +1282,11 @@ log "=== Final Build Environment Validation ==="
 log "Checking critical files and configurations..."
 
 # Check pubspec.yaml for updated dependencies
-log "Current flutter_inappwebview version in pubspec.yaml:"
+log "Current plugin versions in pubspec.yaml:"
 grep "flutter_inappwebview:" pubspec.yaml || log "flutter_inappwebview not found in pubspec.yaml"
+grep "package_info_plus:" pubspec.yaml || log "package_info_plus not found in pubspec.yaml"
+grep "flutter_local_notifications:" pubspec.yaml || log "flutter_local_notifications not found in pubspec.yaml"
+grep "permission_handler:" pubspec.yaml || log "permission_handler not found in pubspec.yaml"
 
 # Check if namespace fix file was created
 if [ -f "android/plugin_namespace_fix.gradle" ]; then
